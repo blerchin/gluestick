@@ -1,5 +1,5 @@
 var width = window.innerWidth,
-    height = window.innerHeight;
+    height = window.innerHeight-50;
 
 var color = d3.scale.category20c();
 
@@ -12,11 +12,23 @@ var svg = d3.select("#chart").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-
-//This stuff all sucks big time, but since we are dealing with dynamic data I can't think of a better way to do it.
-//We create an objects table, then reference those objects from the links table based on database ID.
-//Then feed a zero-based table of objects and links by index to d3 on start() and every update()
-//Nodes will need to retrieve data by looking it up in the nodesTable.
+svg.append("rect")
+    .attr("class","toolbar")
+    .attr("width", "100%")
+    .attr("height", 30)
+    .attr("x",0)
+    .attr("y",0);
+    
+svg.append("rect")
+    .attr("class", "button")
+    .attr("x",5)
+    .attr("y",0)
+    .attr("width", "40")
+    .attr("height", "20")
+    
+svg.append("text")
+        .attr("class","button_text")
+        .text("+Node");
 
 
 
@@ -24,11 +36,11 @@ d3.json("list", function(json) {
   //make or update a hash table of nodes by database id
   var nodesHash = [];
   for (n=0; n<json.nodes.length; n++) {
-  	nodesHash[n] = json.nodes[n].id;
+  	 nodesHash[n] = json.nodes[n].id;
   }
-  //apply an index manually. Why this is necessary I have absolutely no idea.
   
-  var nodes = json.nodes;
+  //apply an index manually. Why this is necessary I have absolutely no idea.
+    var nodes = json.nodes;
   for (n=0; n<nodes.length; n++) {
   	nodes[n].index=n;
   	nodes[n].weight=1;

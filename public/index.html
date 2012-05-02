@@ -14,14 +14,49 @@
 			opacity: .7;
 			fill: #dadade;
 		  }
+      rect.button {
+            fill: #000;
+            width:50;
+      }
+      rect.button_text{
+            fill:#fff;
+      }
+      rect.toolbar{
+          fill: #000;
+          stroke: #000;
+      }
 	  
 	  line.link {
 		  stroke: #666;
 		  stroke-opacity: .3;
 		  }
+      body {
+          overflow: hidden;
+          position:fixed;
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+      }
+      #chart {
+          position:absolute;
+          top: 50px;
+      }
+      #header {
+          margin: 5px;
+      }
+      h1 {
+          display: inline-block;
+      }
+      h2 {
+          margin-left: 10px;
+          display: inline-block;
+          }
 	</style>
   </head>
   <body>
+    <div id="header"><h1>Gluestick</h1>
+                     <h2>stick it to the man</h2>
+    </div>
     <div id="chart"></div>
     <script type="text/javascript" src="front.js"></script>
   </body>
