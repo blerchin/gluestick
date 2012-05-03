@@ -5,8 +5,7 @@
     <title>Neo4j Node Graph Example</title>
     <script type="text/javascript" src="d3.v2.js"></script>
     <script type="text/javascript" src="jquery-1.7.2.min.js"></script>
-    
-    <link type="text/css" rel="stylesheet" href="neochord.css"/>
+    <link rel="stylesheet" type="text/css" href="gluestick-ui.css" />
     <style>
 	  rect.node {
 			stroke: #333;
@@ -15,48 +14,40 @@
 			fill: #dadade;
 		  }
       rect.button {
-            fill: #000;
             width:50;
+            height:20;
+            fill: #000;
+            stroke: #fff;
       }
-      rect.button_text{
+      text.button_text{
             fill:#fff;
+            font-size: 12px;
       }
       rect.toolbar{
           fill: #000;
           stroke: #000;
       }
-	  
+
 	  line.link {
 		  stroke: #666;
 		  stroke-opacity: .3;
 		  }
-      body {
-          overflow: hidden;
-          position:fixed;
-          margin: 0;
-          padding: 0;
-          font-family: Arial, sans-serif;
-      }
-      #chart {
-          position:absolute;
-          top: 50px;
-      }
-      #header {
-          margin: 5px;
-      }
-      h1 {
-          display: inline-block;
-      }
-      h2 {
-          margin-left: 10px;
-          display: inline-block;
-          }
+
 	</style>
   </head>
   <body>
     <div id="header"><h1>Gluestick</h1>
-                     <h2>stick it to the man</h2>
-    </div>
+                     <h2>stick it to the man!</h2>
+        </div>
+        <div id="toolbar">
+            <ul>
+                <li><a href="#" class="toolSetter" action="nav">nav</a></li>
+                <li><a href="#" class="toolSetter" action="addNode">+node</a></li>
+                <li><a href="#" class="toolSetter" action="addLink">+link</a></li>
+                <li><a href="#" class="toolSetter" action="anchor">+anchor</a></li>
+                <li class="tooltip"></li>
+            </ul>
+        </div>
     <div id="chart"></div>
     <script type="text/javascript" src="front.js"></script>
   </body>

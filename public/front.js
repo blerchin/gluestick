@@ -12,57 +12,28 @@ var svg = d3.select("#chart").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-svg.append("rect")
-    .attr("class","toolbar")
-    .attr("width", "100%")
-    .attr("height", 30)
-    .attr("x",0)
-    .attr("y",0);
-    
-svg.append("rect")
-    .attr("class", "button")
-    .attr("x",5)
-    .attr("y",0)
-    .attr("width", "40")
-    .attr("height", "20")
-    
-svg.append("text")
-        .attr("class","button_text")
-        .text("+Node");
 
+
+var toolState="nav";
+
+$('div#toolbar ul li a.toolSetter').click(function(e){
+    console.log("clicked");
+    e.preventDefault()
+    toolState= $(this).attr('action');
+    setToolTip(toolState);
+    console.log("toolState is now ",toolState);
+    return false;
+});
 
 
 d3.json("list", function(json) {
-  //make or update a hash table of nodes by database id
-  var nodesHash = [];
-  for (n=0; n<json.nodes.length; n++) {
-  	 nodesHash[n] = json.nodes[n].id;
-  }
-  
-  //apply an index manually. Why this is necessary I have absolutely no idea.
-    var nodes = json.nodes;
-  for (n=0; n<nodes.length; n++) {
-  	nodes[n].index=n;
-  	nodes[n].weight=1;
-  	nodes[n].weight=1;
-  }
-  
-  //make or update an assoc. array of links by nodesHash key. This is important because d3.force assumes links refer to array loc
-  var linksTable=[]; //this is technically incorrect, but the built-in array methods are too useful to give up.
-  for (n=0; n<json.links.length; n++) {
-   var sourceNode = nodes[nodesHash.indexOf(json.links[n].source)];
-   var targetNode = nodes[nodesHash.indexOf(json.links[n].target)];
-   if (sourceNode && targetNode) {
-	   linksTable[linksTable.length++] = {"source": sourceNode,
-						"target": targetNode , "value": 5 };
-		}
-   }
-  	
-  	
-  console.log("linksTable = " , linksTable);
- console.log(linksTable[1].source.index);
- 
- 
+    var nodesHash = getHashTable(json.nodes,"id")
+    var nodes = getIndexedNodes(json.nodes);
+    var linksTable = getLinksTable(nodes, nodesHash, json.links);
+
+    console.log("linksTable = " , linksTable);
+
+
   force
 	  .nodes(nodes)
       .links(linksTable)
@@ -84,6 +55,8 @@ d3.json("list", function(json) {
       .attr("class", "node")
       .attr("width", 50)
       .attr("height",50)
+      .attr("rx",10)
+      .attr("ry",10)
       .style("fill", function(d){return color(d.group); })
       .call(force.drag);
 
@@ -98,8 +71,8 @@ d3.json("list", function(json) {
     o.y += i & 1 ? k : -k;
     o.x += i & 10 ? k : -k;
   });
-*/  
-  
+*/
+
     link.attr("x1", function(d) { return d.source.x; })
         .attr("y1", function(d) { return d.source.y; })
         .attr("x2", function(d) { return d.target.x; })
@@ -109,6 +82,60 @@ d3.json("list", function(json) {
         .attr("y", function(d) { return d.y; });
   });
 });
+
+//////////Global functions below//////////
+
+//make or update a hash table of nodes by database id
+  var getHashTable = function(obj,prop) {
+     var hash = [];
+     for (n=0; n<obj.length; n++) {
+       hash[n] = obj[n][prop];
+     }
+     return hash;
+  }
+
+//initialize and update the table of links
+var getIndexedNodes = function(nodes) {
+//apply an index manually. Something to do with the bare object not having an index method built in.
+      for (n=0; n<nodes.length; n++) {
+       nodes[n].index=n;
+         nodes[n].weight=1;
+    }
+    return nodes;
+  }
+
+//make or update an assoc. array of links by nodesHash key. We want the links table to refer directly to objects in *nodes*.
+var getLinksTable = function(nodes,hash,links) {
+    if (!linksTable) {
+        var linksTable=[]; //using an array as an associate array in JS is not really proper, but d3 expects to receive data in an array, so tough.
+    }
+       for (n=0; n<links.length; n++) {
+       var sourceNode = nodes[hash.indexOf(links[n].source)];
+       var targetNode = nodes[hash.indexOf(links[n].target)];
+       if (sourceNode && targetNode) {
+           linksTable[linksTable.length++] = {"source": sourceNode,
+    						"target": targetNode , "value": 5 };
+    		}
+       }
+       return linksTable;
+  }
+
+//// UI&JQuery Functions
+var hints = new Object();
+    hints = {   "nav"       :  {"message": "Click and Drag the boxes below to navigate."},
+                "addNode"   :  {"message": "Click a box below to connect it to a new one."},
+                "addLink"   :  {"message": "Click and drag from one box to another to link them."},
+                "anchor"    :  {"message": "Click and drag a box to position it. It will stick in place where you release it."}};
+console.log(hints['nav']['message']);
+var setToolTip = function(toolState) {
+    $('#toolbar ul li.tooltip').text(hints[toolState].message);
+}
+
+
+
+
+
+
 
 
 /////////This is probably all useless, but hold onto it for reference
@@ -122,12 +149,12 @@ map = function (func, object) {
     push(func(n), result);
   }
   return result;
-}	
+}
 
 filter = function (comparator, object) {
 	var result = [];
 	for (i in object) {
-		if (comparator(i)) { 
+		if (comparator(i)) {
 			push(i, result);
 		}
 	}
@@ -136,4 +163,3 @@ filter = function (comparator, object) {
 
 //collect = function() {var result; for (x in nodes) { nodes.id==json.links[n].target ? return x;}
 
-		
