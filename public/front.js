@@ -1,5 +1,5 @@
 var width = window.innerWidth,
-    height = window.innerHeight-50;
+    height = window.innerHeight;
 
 var color = d3.scale.category20c();
 
@@ -26,7 +26,7 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
 });
 
 
-d3.json("list", function(json) {
+d3.json("list.json", function(json) {
     var nodesHash = getHashTable(json.nodes,"id")
     var nodes = getIndexedNodes(json.nodes);
     var linksTable = getLinksTable(nodes, nodesHash, json.links);
@@ -37,8 +37,8 @@ d3.json("list", function(json) {
   force
 	  .nodes(nodes)
       .links(linksTable)
-      .linkDistance(170)
-      .charge(-60)
+      .linkDistance( 100)
+      .charge(-750)
       .gravity(.05)
       .start();
 
@@ -64,14 +64,6 @@ d3.json("list", function(json) {
       .text(function(d) { return "id:" + nodesHash[Number(d)]; });
 
   force.on("tick", function(e) {
- /*
-   // Push different nodes in different directions for clustering.
-  var k = 10 * e.alpha;
-  nodes.forEach(function(o, i) {
-    o.y += i & 1 ? k : -k;
-    o.x += i & 10 ? k : -k;
-  });
-*/
 
     link.attr("x1", function(d) { return d.source.x; })
         .attr("y1", function(d) { return d.source.y; })
@@ -130,12 +122,6 @@ console.log(hints['nav']['message']);
 var setToolTip = function(toolState) {
     $('#toolbar ul li.tooltip').text(hints[toolState].message);
 }
-
-
-
-
-
-
 
 
 /////////This is probably all useless, but hold onto it for reference
