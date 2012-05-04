@@ -3,6 +3,23 @@ require 'neography'
 require 'sinatra'
 require 'uri'
 
+helpers do
+
+  def protected!
+    unless authorized?
+      response['WWW-Authenticate'] = %(Basic realm="Restricted Area")
+      throw(:halt, [401, "Not authorized\n"])
+    end
+  end
+
+  def authorized?
+    @auth ||=  Rack::Auth::Basic::Request.new(request.env)
+    @auth.provided? && @auth.basic? && @auth.credentials && @auth.credentials == ['editor', 'admin']
+  end
+
+end
+
+
 def create_graph
   neo = Neography::Rest.new
   graph_exists = neo.get_node_properties(1)
@@ -38,7 +55,9 @@ def nodes_links
   cypher_query << " RETURN a.id, b.id"
   neo.execute_query(cypher_query)["data"]
 end
+
 get '/edit' do
+    protected!
     erb:edit
 end
 
