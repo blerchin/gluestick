@@ -38,6 +38,10 @@ def nodes_links
   cypher_query << " RETURN a.id, b.id"
   neo.execute_query(cypher_query)["data"]
 end
+get '/edit' do
+    erb:edit
+end
+
 
 get '/nodes' do
 	#WORKS BUT REQUIRES LOTS OF MESSY JS
