@@ -18,6 +18,25 @@ helpers do
   end
 
 end
+def create_gluestick_graph
+  @neo = Neography::Rest.new
+
+  def create_a_node(type, name)
+  	@neo.create_node("TYPE" => type, "name" => name)
+  end
+  
+  root = create_a_node("root", "root")
+  
+  count = (1..6).to_a
+  
+  count.each_index do |x|
+  	page = create_a_node("page", x.to_s)
+  	@neo.create_relationship("links", root, page)
+	
+  end
+ 
+end
+
 
 
 def create_graph
@@ -56,9 +75,6 @@ def nodes_links
   neo.execute_query(cypher_query)["data"]
 end
 
-def nodes_add
-  neo = N
-
 get '/edit' do
     protected!
     erb:edit
@@ -73,7 +89,6 @@ end
 get '/matrix' do
 	########Better Maybe?
 	{"matrix" => nodes_links.map{|m| { "id" => m[0], "dist" => m[1]-m[0]   }}}.to_json
-
 end
 
 get '/list.json' do
@@ -91,16 +106,29 @@ get '/defined_nodes' do
   	neo = Neography::Rest.new
     { "nodes_index" => neo.list_node_indexes}.to_json
 end
+
 get '/nodes/new/id/:theId' do
 	neo = Neography::Rest.new
 	if neo.create_unique_node( "id" => params[:theId], "type" => "debug") then
 		"made a node with id = #{params[:theId]}"
  	end
 end
+
+
 get '/nodes/tumblr/new/:tumblrId/links/:linkId' do
 	neo = Neography::Rest.new
-	commands = ids.map{ |n| [:create_node, {"id" => params[:tumblrId]}]}
-	commands << [:add_node_to_index, "post_index", "type", "Tumblr Post", "{#{params[:tumblrId]}}"]
-    commands << [:create_relationship, "links", "{#{tumblrId}}", "{#{linkId}}"]
-	batch_result = neo.batch *commands
+	graph_exists = neo.get_node_properties(1)
+	next_index = no
+	commands = []
+		unless graph_exists then
+			commands << [:create_node, {"id" => params[:linkId]} ]
+			commands << [:add_node_to_index, "tpost_index", "type", "tPost", "{0}"]
+
+		end	
+		
+			commands << [:create_node, {"id" => params[:tumblrId]} ]
+			  			[:add_node_to_index, "tpost_index", "type", "tPost", "{1}"]
+			    		[:create_relationship, "links", "{0}", "{#{params[:linkId]}}"]
+
 end
+
