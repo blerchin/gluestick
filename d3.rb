@@ -56,6 +56,9 @@ def nodes_links
   neo.execute_query(cypher_query)["data"]
 end
 
+def nodes_add
+  neo = N
+
 get '/edit' do
     protected!
     erb:edit
@@ -76,4 +79,28 @@ end
 get '/list.json' do
    {  "nodes" => nodes_links.map{|fm| {"id" => fm[0], "attr"=> { "attr0" => fm[0]*4655, "attr1" => fm[0]*4 },  "group"=>1 }}.uniq ,
   	  "links" => nodes_links.map{|fm| {"source" => fm[0], "target" => fm[1] }} }.to_json
+end
+
+
+get '/nodes/new/links/:link' do
+    {"result" => "this would have created a new node attached to #{params[:link]} if it were working!"}.to_json
+end
+
+###Development Methods --- Not to be available in production
+get '/defined_nodes' do
+  	neo = Neography::Rest.new
+    { "nodes_index" => neo.list_node_indexes}.to_json
+end
+get '/nodes/new/id/:theId' do
+	neo = Neography::Rest.new
+	if neo.create_unique_node( "id" => params[:theId], "type" => "debug") then
+		"made a node with id = #{params[:theId]}"
+ 	end
+end
+get '/nodes/tumblr/new/:tumblrId/links/:linkId' do
+	neo = Neography::Rest.new
+	commands = ids.map{ |n| [:create_node, {"id" => params[:tumblrId]}]}
+	commands << [:add_node_to_index, "post_index", "type", "Tumblr Post", "{#{params[:tumblrId]}}"]
+    commands << [:create_relationship, "links", "{#{tumblrId}}", "{#{linkId}}"]
+	batch_result = neo.batch *commands
 end
