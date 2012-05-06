@@ -17,22 +17,23 @@ helpers do
     @auth.provided? && @auth.basic? && @auth.credentials && @auth.credentials == ['editor', 'admin']
   end
 
+def create_indexed_node(type, name)
+  	neo = Neography::Rest.new
+  	node = neo.create_node("type" => type, "name" => name)
+  	neo.add_node_to_index("nodes_index","type", type, node)
+  	return node
+  end
 end
+
 def create_gluestick_graph
   @neo = Neography::Rest.new
-
-  def create_a_node(type, name)
-  	@neo.create_node("TYPE" => type, "name" => name)
-  end
-  
-  root = create_a_node("root", "root")
+    
+  root = create_indexed_node("root", "root")
   
   count = (1..6).to_a
-  
   count.each_index do |x|
-  	page = create_a_node("page", x.to_s)
-  	@neo.create_relationship("links", root, page)
-	
+	page = create_indexed_node("page", x.to_s)
+	@neo.create_relationship("links", root, page)
   end
  
 end
@@ -59,13 +60,6 @@ def create_graph
   batch_result = neo.batch *commands
 end
 
-def nodes_matrix
-  neo = Neography::Rest.new
-  cypher_query =  " START a = node:nodes_index(type='Post')"
-  cypher_query << " MATCH a-[:links]->b"
-  cypher_query << " RETURN a.id, collect(b.id)"
-  neo.execute_query(cypher_query)["data"]
-end
 
 def nodes_links
   neo = Neography::Rest.new
@@ -80,21 +74,12 @@ get '/edit' do
     erb:edit
 end
 
-
-get '/nodes' do
-	#WORKS BUT REQUIRES LOTS OF MESSY JS
-	{"nodes" => nodes_matrix.map{|fm| {"id" => fm[0], "links" => fm[1][1..(fm[1].size - 2)]}}}.to_json
-end
-
-get '/matrix' do
-	########Better Maybe?
-	{"matrix" => nodes_links.map{|m| { "id" => m[0], "dist" => m[1]-m[0]   }}}.to_json
-end
-
 get '/list.json' do
    {  "nodes" => nodes_links.map{|fm| {"id" => fm[0], "attr"=> { "attr0" => fm[0]*4655, "attr1" => fm[0]*4 },  "group"=>1 }}.uniq ,
   	  "links" => nodes_links.map{|fm| {"source" => fm[0], "target" => fm[1] }} }.to_json
 end
+
+
 
 
 get '/nodes/new/links/:link' do
@@ -115,20 +100,14 @@ get '/nodes/new/id/:theId' do
 end
 
 
-get '/nodes/tumblr/new/:tumblrId/links/:linkId' do
-	neo = Neography::Rest.new
-	graph_exists = neo.get_node_properties(1)
-	next_index = no
-	commands = []
-		unless graph_exists then
-			commands << [:create_node, {"id" => params[:linkId]} ]
-			commands << [:add_node_to_index, "tpost_index", "type", "tPost", "{0}"]
-
-		end	
+get '/page/:page/node/new/:name' do
+	  @neo = Neography::Rest.new
+	  page = @neo.execute_query("START r=node:nodes_index(type='root') MATCH r --> p WHERE (p.type = 'page' AND p.name = \'#{params[:page]}\' )  RETURN p")
+		page.to_json
 		
-			commands << [:create_node, {"id" => params[:tumblrId]} ]
-			  			[:add_node_to_index, "tpost_index", "type", "tPost", "{1}"]
-			    		[:create_relationship, "links", "{0}", "{#{params[:linkId]}}"]
+	  #new_post = create_indexed_node("post", "#{params[:name] }")
+
+	  #@neo.create_relationship("links",new_post, page)
 
 end
 
