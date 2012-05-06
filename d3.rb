@@ -3,6 +3,7 @@ require 'neography'
 require 'sinatra'
 require 'uri'
 
+###### Keep Editing modes off limits to prying eyes!!!
 helpers do
 
   def protected!
@@ -16,30 +17,17 @@ helpers do
     @auth ||=  Rack::Auth::Basic::Request.new(request.env)
     @auth.provided? && @auth.basic? && @auth.credentials && @auth.credentials == ['editor', 'admin']
   end
+end
 
 def create_indexed_node(type, name)
   	neo = Neography::Rest.new
   	node = neo.create_node("type" => type, "name" => name)
   	neo.add_node_to_index("nodes_index","type", type, node)
-  	return node
-  end
+  	node
 end
 
-def create_gluestick_graph
-  @neo = Neography::Rest.new
-    
-  root = create_indexed_node("root", "root")
-  
-  count = (1..6).to_a
-  count.each_index do |x|
-	page = create_indexed_node("page", x.to_s)
-	@neo.create_relationship("links", root, page)
-  end
- 
-end
-
-
-
+## Run these from terminal with rake neo4j:create[_gluestick] command within gluestick dir
+## First one is probably deprecated... but could be useful for testing
 def create_graph
   neo = Neography::Rest.new
   graph_exists = neo.get_node_properties(1)
@@ -60,54 +48,114 @@ def create_graph
   batch_result = neo.batch *commands
 end
 
+#### Create the paged graph structure to initialize the whole deal.
+#### Probably should be more elaborate in the future - add seed posts in each page, etc.
 
-def nodes_links
+def create_gluestick_graph
+  @neo = Neography::Rest.new
+    
+  root = create_indexed_node("root", "root")
+  
+  count = (1..6).to_a
+  count.each_index do |x|
+	page = create_indexed_node("page", x.to_s)
+	@neo.create_relationship("links", root, page)
+    end
+  end
+
+#### Methods used throughout to manage simple link operations.
+#### Note that the only operation requiring a cypher query is to read and send link structure for front end.
+
+def create_link(source,target)
   neo = Neography::Rest.new
-  cypher_query =  " START a = node:nodes_index(type='Post')"
-  cypher_query << " MATCH a-[:links]->b"
-  cypher_query << " RETURN a.id, b.id"
-  neo.execute_query(cypher_query)["data"]
-end
+  neo.create_relationship("links", source, target)
+  end
 
+def get_post_by_name(name)
+  neo = Neography::Rest.new
+  post = neo.get_node_index("nodes_index", "type", "post").select{|n| n['data']['name'] == name }.map{|n| n['self']}
+  end
+
+def get_page(page)
+  neo = Neography::Rest.new
+  pages = neo.get_node_index("nodes_index", "type", "page")
+  page = pages.select{|n| n['data']['name'] == page }.map{|n| n['self']}
+  end
+
+def get_post_in_page(name, page)
+  neo = Neography::Rest.new
+  linked_posts = neo.get_node_relationships(page).map{|n| n['end']}.map{|n| neo.get_node(n)}
+  result = linked_posts.select{|n| n['data']['type'] == 'post' }.select{|n| n['data']['name'] == name}
+  end
+
+#### Get ALL OF THE POSTS AND LINKS associated with a given page.
+#### This one need work. Doesn't currently display the links we are looking for!!!
+
+def nodes_links(page)
+  neo = Neography::Rest.new
+  cypher_query =  "START a = node:nodes_index(type='page')"
+  cypher_query << "MATCH (a)-[:links]->(b)"
+  cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post'"
+  cypher_query << "RETURN a.name, b.name"
+  neo.execute_query(cypher_query)
+  end
+
+
+
+#### Here's the setup for our RESTful backend using Sinatra for some high-fructose 
+#### syntactic sugar.
+
+## Load the front end editor. Need to work out a way to select/navigate through pages.
 get '/edit' do
     protected!
     erb:edit
 end
 
-get '/list.json' do
-   {  "nodes" => nodes_links.map{|fm| {"id" => fm[0], "attr"=> { "attr0" => fm[0]*4655, "attr1" => fm[0]*4 },  "group"=>1 }}.uniq ,
-  	  "links" => nodes_links.map{|fm| {"source" => fm[0], "target" => fm[1] }} }.to_json
+## This is the big one. Read all of the posts+links associated with a given page 
+## and send them to the front end.
+get '/page/:page/links' do
+   {  "nodes" => nodes_links(params[:page]).map{|fm| {"id" => fm[0], "attr"=> { "attr0" => fm[0]*4655, "attr1" => fm[0]*4 },  "group"=>1 }}.uniq ,
+  	  "links" => nodes_links(params[:page]).map{|fm| {"source" => fm[0], "target" => fm[1] }} }.to_json
+end
+
+## Get the page node. 
+## Not really sure when this would be useful so it may belong in the dev section.
+get '/page/:page' do
+	get_page(params[:page]).to_json
+end
+
+## Get an explicitly-named post from the stated page.
+get '/page/:page/post/:name' do
+	get_posts_in(params[:name], get_page(params[:page])).to_json
 end
 
 
+#### DEVELOPMENT METHODS --- Not to be available in this form for production
+#### (in some cases that just means changing GET to POST or DELETE)
 
+## Does what it says. Create a new node on a given page.
+get '/page/:page/node/new/:name' do
+	neo = Neography::Rest.new
+	page = get_page(params[:page])
+	new_post = create_indexed_node("post", "#{params[:name] }")['self']
+	neo.create_relationship("links", page, new_post)
+	end
 
-get '/nodes/new/links/:link' do
-    {"result" => "this would have created a new node attached to #{params[:link]} if it were working!"}.to_json
-end
-
-###Development Methods --- Not to be available in production
-get '/defined_nodes' do
+## Just for testing. Confirm existence of an index.
+get '/nodes_index' do
   	neo = Neography::Rest.new
     { "nodes_index" => neo.list_node_indexes}.to_json
 end
 
+## Just for testing. Get neo4j root.
+get '/nodes' do
+	nodes_links(0).to_json
+end
+
+## Hmmm this probably doesn't need to exist
 get '/nodes/new/id/:theId' do
 	neo = Neography::Rest.new
 	if neo.create_unique_node( "id" => params[:theId], "type" => "debug") then
 		"made a node with id = #{params[:theId]}"
  	end
 end
-
-
-get '/page/:page/node/new/:name' do
-	  @neo = Neography::Rest.new
-	  page = @neo.execute_query("START r=node:nodes_index(type='root') MATCH r --> p WHERE (p.type = 'page' AND p.name = \'#{params[:page]}\' )  RETURN p")
-		page.to_json
-		
-	  #new_post = create_indexed_node("post", "#{params[:name] }")
-
-	  #@neo.create_relationship("links",new_post, page)
-
-end
-
