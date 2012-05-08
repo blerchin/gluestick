@@ -26,8 +26,8 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
 });
 
 
-d3.json("list.json", function(json) {
-    var nodesHash = getHashTable(json.nodes,"id")
+d3.json("page/3/links", function(json) {
+    var nodesHash = getHashTable(json.nodes,"name")
     var nodes = getIndexedNodes(json.nodes);
     var linksTable = getLinksTable(nodes, nodesHash, json.links);
 
