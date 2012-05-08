@@ -39,8 +39,8 @@ d3.json("page/1/links", function(json) {
   force
 	  .nodes(json.posts, function(d) {return d.id})
       .links(linksTable)
-      .linkDistance( 60)
-      .charge(-150)
+      .linkDistance( 125)
+      .charge(-1000)
       .gravity(.05)
       .start();
 

@@ -51,7 +51,6 @@ def create_graph
 end
 
 #### Create the paged graph structure to initialize the whole deal.
-#### Probably should be more elaborate in the future - add seed posts in each page, etc.
 
 def create_gluestick_graph
   @neo = Neography::Rest.new
@@ -67,11 +66,9 @@ def create_gluestick_graph
 	num_posts.to_a.each do |y|
 		post = create_indexed_node("post", y.to_s)
 		@neo.create_relationship("links", page, post)
-
     end
-    num_links.to_a.each_index do |y|
-    	page_node = get_page(page)
-	  	create_link( get_post_in_page(rand(num_posts), page_node), get_post_in_page(rand(num_posts), page_node) )
+    num_links.to_a.each do |y|
+	  	create_link( get_post_in_page(rand(num_posts).to_s, x.to_s), get_post_in_page(rand(num_posts).to_s, x.to_s) )
 	end
   end
 end
@@ -137,7 +134,7 @@ end
 get '/page/:page/links' do
 	table = nodes_links(params[:page])['data']
 	
-	 {  "posts" => table.map{|n| {"id" => n[0] , "name" => n[1] }} ,
+	 {  "posts" => table.map{|n| {"id" => n[0] , "name" => n[1] }}.uniq ,
   	  	"links" => table.map{|l| l[2] ? {"source" => l[2][0] , "target" => l[2][1] } : nil }.compact }.to_json
 end
 
