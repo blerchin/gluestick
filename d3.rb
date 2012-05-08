@@ -68,7 +68,8 @@ def create_gluestick_graph
 		@neo.create_relationship("links", page, post)
     end
     num_links.to_a.each do |y|
-	  	create_link( get_post_in_page(rand(num_posts.length).to_s, x.to_s), get_post_in_page(rand(num_posts.length).to_s, x.to_s) )
+    ##following works fine locally but comes back with 'cannot convert range to int' on heroku
+	  	create_link( get_post_in_page(rand(num_posts).to_s, x.to_s), get_post_in_page(rand(num_posts).to_s, x.to_s) ) 
 	end
   end
 end
