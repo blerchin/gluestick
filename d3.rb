@@ -3,6 +3,8 @@ require 'neography'
 require 'sinatra'
 require 'uri'
 
+@neo2 = Neography::Rest.new
+
 ###### Keep Editing modes off limits to prying eyes!!!
 helpers do
 
@@ -102,25 +104,21 @@ def get_post_in_page(name, page)
   neo = Neography::Rest.new
   cypher_query =  "START a = node:nodes_index(type='page')"
   cypher_query << "MATCH (a)-[:links]->(b)"
-  cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post' AND b.name = '\'#{name}\'"
-  cypher_query << "RETURN b"
-  neo.execute_query(cypher_query)
-
-  #linked_posts = neo.get_node_relationships(get_page(page)).map{|n| n['end']}.map{|n| neo.get_node(n)}
-  #result = linked_posts.select{|n| n['data']['type'] == 'post' }.select{|n| n['data']['name'] == name}
+  cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post' AND b.name = \'#{name}\' "
+  cypher_query << "RETURN ID(b)"
+  result = neo.execute_query(cypher_query)
+  result ? result['data'][0] : nil
   end
 
 #### Get ALL OF THE POSTS AND LINKS associated with a given page.
-#### This one need work. Doesn't currently display the links we are looking for!!!
-
 def nodes_links(page)
   neo = Neography::Rest.new
   cypher_query =  "START a = node:nodes_index(type='page')"
-  cypher_query << "MATCH (a)-[:links]->(b)-[:links]->(c)"
-  cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post'"
-  # AND c.type='post' "
-  cypher_query << "RETURN b.name, c.name"
-  neo.execute_query(cypher_query)['data']
+  cypher_query << "MATCH (a)-[:links]->(b), p= (b)-[?:links]->(c)"
+  cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post' AND c.type ?= 'post' "
+  cypher_query << "RETURN ID(b), b.name, extract(n in nodes(p) : ID(n) )"
+  result = neo.execute_query(cypher_query)
+  if result then result else raise "cypher error" end
   end
 
 
@@ -137,23 +135,27 @@ end
 ## This is the big one. Read all of the posts+links associated with a given page 
 ## and send them to the front end.
 get '/page/:page/links' do
-   {  "nodes" => nodes_links(params[:page]).map{|nl| {"name" => nl[0],  "group"=>1 }}.uniq ,
-  	  "links" => nodes_links(params[:page]).map{|nl| {"source" => nl[0], "target" => nl[1] }} }.to_json
+	table = nodes_links(params[:page])['data']
+	
+	 {  "posts" => table.map{|n| {"id" => n[0] , "name" => n[1] }} ,
+  	  	"links" => table.map{|l| l[2] ? {"source" => l[2][0] , "target" => l[2][1] } : nil }.compact }.to_json
 end
 
 ## Get the page node. 
 ## Not really sure when this would be useful so it may belong in the dev section.
 get '/page/:page' do
-	get_page(params[:page]).class.to_json
+	page = Neography::Node.load(get_page(params[:page]))
+	page.to_json
 end
 
-## Get an explicitly-named post from the stated page.
+## Get an post by neo_id from the stated page.
 get '/page/:page/post/:name' do
-	get_post_in_page(params[:name], params[:page]).to_json
-end
+	get_post_in_page( params[:name], params[:page] ).to_json
+	end
+
 
 ## Link two posts
-get '/page/:page/post/:post1/link/:post2' do
+get '/page/:page/post/:post1/links/:post2' do
 	create_link( get_post_in_page(params[:post1], params[:page]), get_post_in_page(params[:post2], params[:page]) ).to_json
 end
 
@@ -162,11 +164,13 @@ end
 
 ## Does what it says. Create a new node on a given page.
 get '/page/:page/post/new/:name' do
-	neo = Neography::Rest.new
-	page = get_page(params[:page])
-	new_post = create_indexed_node("post", "#{params[:name] }")['self']
-	neo.create_relationship("links", page, new_post).to_json
+	page = Neography::Node.load(get_page(params[:page]))
+	new_post = Neography::Node.create("name" => params[:name], "type" => "post")
+	page.both(:links) << new_post
+	{data:[ {"neo_id" => new_post.neo_id, "name" => new_post.name, "links" => new_post.outgoing(:links).map{|n| n.neo_id} }]}.to_json
+	
 	end
+
 
 ## Just for testing. Confirm existence of an index.
 get '/nodes_index' do

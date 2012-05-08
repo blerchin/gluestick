@@ -26,19 +26,21 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
 });
 
 
-d3.json("page/3/links", function(json) {
-    var nodesHash = getHashTable(json.nodes,"name")
-    var nodes = getIndexedNodes(json.nodes);
-    var linksTable = getLinksTable(nodes, nodesHash, json.links);
+d3.json("page/1/links", function(json) {
+   console.log(json)
+    var nodesHash = getHashTable(json.posts,"id")
+    var nodes = getIndexedNodes(json.posts);
+    var linksTable = getLinksTable(json.posts, nodesHash, json.links);
 
     console.log("linksTable = " , linksTable);
+	
 
-
+	
   force
-	  .nodes(nodes)
+	  .nodes(json.posts, function(d) {return d.id})
       .links(linksTable)
-      .linkDistance( 100)
-      .charge(-750)
+      .linkDistance( 60)
+      .charge(-150)
       .gravity(.05)
       .start();
 
@@ -50,7 +52,7 @@ d3.json("page/3/links", function(json) {
 
 
   var node = svg.selectAll("rect.node")
-	   .data(nodes)
+	   .data(json.posts)
     .enter().append("rect")
       .attr("class", "node")
       .attr("width", 50)
@@ -61,14 +63,14 @@ d3.json("page/3/links", function(json) {
       .call(force.drag);
 
   node.append("title")
-      .text(function(d) { return "id:" + nodesHash[Number(d)]; });
+      .text(function(d) { return d['name'] + ", id=" + d['id']; });
 
   force.on("tick", function(e) {
 
-    link.attr("x1", function(d) { return d.source.x; })
-        .attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
+    link.attr("x1", function(d) { return d.source.x + 25; })
+        .attr("y1", function(d) { return d.source.y + 25; })
+        .attr("x2", function(d) { return d.target.x + 25; })
+        .attr("y2", function(d) { return d.target.y + 25; });
 
     node.attr("x", function(d) { return d.x; })
         .attr("y", function(d) { return d.y; });
