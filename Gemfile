@@ -1,7 +1,7 @@
 source 'http://rubygems.org'
 
 gem 'sinatra'
-gem 'neography'
+gem "neography", "~> 0.0.26"
 gem 'haml'
 gem 'json'
 
