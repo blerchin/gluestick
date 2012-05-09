@@ -1,3 +1,7 @@
+//Read Bookmark-able URL
+var currentLoc = location.hash,
+	currentPage = Number(currentLoc.replace(/([^0-9]*)/ig,""));
+
 var width = window.innerWidth,
     height = window.innerHeight;
 
@@ -25,8 +29,11 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
     return false;
 });
 
+////Page navigator needs more thought and work, but it can wait till editor is done.
+//$('#chart').prepend('<a onclick = "loadPrevPage()" href="#'+(currentPage-1)+'" id = pageLeft >PREV</div>')
+//$('#chart').prepend('<a onclick = "loadNextPage()" href="#'+(currentPage + 1)+'" id = pageRight >NEXT<div>')
 
-d3.json("page/1/links", function(json) {
+d3.json("/page/"+currentPage+"/links", function(json) {
    console.log(json)
     var nodesHash = getHashTable(json.posts,"id")
     var nodes = getIndexedNodes(json.posts);
@@ -39,9 +46,8 @@ d3.json("page/1/links", function(json) {
   force
 	  .nodes(json.posts, function(d) {return d.id})
       .links(linksTable)
-      .linkDistance( 125)
+      .linkDistance( function(d) { return d.source.width + d.target.width})
       .charge(-1000)
-      .gravity(.05)
       .start();
 
   var link = svg.selectAll("line.link")
@@ -51,29 +57,47 @@ d3.json("page/1/links", function(json) {
       .style("stroke-width", function(d) { return Math.sqrt(d.value); });
 
 
-  var node = svg.selectAll("rect.node")
-	   .data(json.posts)
-    .enter().append("rect")
-      .attr("class", "node")
-      .attr("width", 50)
-      .attr("height",50)
-      .attr("rx",10)
-      .attr("ry",10)
-      .style("fill", function(d){return color(d.group); })
-      .call(force.drag);
+  var node = svg.selectAll("svg.node")
+		.data(json.posts)
+    .enter()
+		.append("svg")
+		  .attr("class", "node")
+		  .attr("width", function(d) {return d['width']})
+		  .attr("height",function(d) {return d['height']})
+		  .call(force.drag);
+		
+		node.append("rect")
+		  .attr("rx",5)
+		  .attr("ry",5)
+		  .attr("stroke", "none")
+		  .attr("stroke-width","0px")
+		  .attr("width","100%")
+		  .attr("height","100%");
 
+  var label = node.append("text")
+    	  	 .attr("class","text")
+    	  	 .attr("x",40)
+    	  	 .attr("y",40)
+//    	  	 .attr("dx", 20)
+//			 .attr("dy", function(d) {return d['height']/2}) 
+			 .attr("text-anchor", "start") // text-align: right
+    	  	 .text(function(d) { return d['name']; });
+ 
+  
   node.append("title")
       .text(function(d) { return d['name'] + ", id=" + d['id']; });
 
   force.on("tick", function(e) {
 
-    link.attr("x1", function(d) { return d.source.x + 25; })
-        .attr("y1", function(d) { return d.source.y + 25; })
-        .attr("x2", function(d) { return d.target.x + 25; })
-        .attr("y2", function(d) { return d.target.y + 25; });
+    link.attr("x1", function(d) { return d.source.x + (d.source.width/2); })
+        .attr("y1", function(d) { return d.source.y + (d.source.height/2); })
+        .attr("x2", function(d) { return d.target.x + (d.target.width/2); })
+        .attr("y2", function(d) { return d.target.y + (d.target.height/2); });
 
     node.attr("x", function(d) { return d.x; })
         .attr("y", function(d) { return d.y; });
+    
+
   });
 });
 
@@ -124,6 +148,8 @@ console.log(hints['nav']['message']);
 var setToolTip = function(toolState) {
     $('#toolbar ul li.tooltip').text(hints[toolState].message);
 }
+
+//// Add page Nav buttons
 
 
 /////////This is probably all useless, but hold onto it for reference

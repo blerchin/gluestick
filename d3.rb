@@ -125,7 +125,7 @@ def nodes_links(page)
 
 
 ## Load the front end editor. Need to work out a way to select/navigate through pages.
-get '/edit' do
+get '/edit/page/*' do
     protected!
     erb:edit
 end
@@ -135,7 +135,7 @@ end
 get '/page/:page/links' do
 	table = nodes_links(params[:page])['data']
 	
-	 {  "posts" => table.map{|n| {"id" => n[0] , "name" => n[1] }}.uniq ,
+	 {  "posts" => table.map{|n| {"id" => n[0] , "name" => n[1], "width"=>100, "height"=>75 } }.uniq ,
   	  	"links" => table.map{|l| l[2] ? {"source" => l[2][0] , "target" => l[2][1] } : nil }.compact }.to_json
 end
 
