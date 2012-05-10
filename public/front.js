@@ -7,18 +7,78 @@ var width = window.innerWidth,
 
 var color = d3.scale.category20c();
 
-var force = d3.layout.force()
-    .charge(120)
-    .linkDistance(30)
-    .size([width, height]);
 
 var svg = d3.select("#chart").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-
-
+///Construct a grid behind edit interface
+var grid = svg.append("svg")
+	.attr("class", "grid")
+	.attr("width", width)
+	.attr("height", height);
+	
+	for (y=0; y<height; y = y + 10) {
+		grid.append("line")
+			.attr("class", "gridline")
+			.attr("x1", 0)
+			.attr("x2", width)
+			.attr("y1", y)
+			.attr("y2", y);
+		}
+	for (x=0; x<width; x = x + 11) {
+	grid.append("line")
+		.attr("class", "gridline")
+		.attr("x1", x)
+		.attr("x2", x)
+		.attr("y1", 0)
+		.attr("y2", height);
+	}
 var toolState="nav";
+
+
+////Page navigator needs more thought and work, but it can wait till editor is done.
+//$('#chart').prepend('<a onclick = "loadPrevPage()" href="#'+(currentPage-1)+'" id = pageLeft >PREV</div>')
+//$('#chart').prepend('<a onclick = "loadNextPage()" href="#'+(currentPage + 1)+'" id = pageRight >NEXT<div>')
+
+var force = d3.layout.force()
+    .charge(-1220)
+    .linkDistance(175)
+    .size([width, height]);
+
+
+
+d3.json("/page/"+currentPage+"/links", function(json) {
+   console.log(json)
+    var node; //Selector for all rendered SVG nodes
+    var links; //Selector for all rendered SVG links
+    
+    var nodes = json.posts;
+    var nodesHash = getHashTable(nodes,"id");
+    var linksTable = getLinksTable(nodes, nodesHash, json.links);
+
+    console.log("linksTable = " , linksTable);
+    console.log("nodes = " , nodes);
+	
+
+var freeze = false;
+	
+  force
+	  .nodes(nodes)
+      .links(linksTable)
+      .linkDistance(175)
+      //function(d){return .75*(d.source.width + d.target.width)})
+      .start();
+
+	drawLinks(svg.selectAll('svg line.link'), linksTable);
+	drawNodes(svg.selectAll('svg.node'), nodes);
+
+
+  force.on("tick", function(e) {
+	if(!freeze){
+		tick(e);
+		}
+  });
 
 $('div#toolbar ul li a.toolSetter').click(function(e){
     console.log("clicked");
@@ -29,101 +89,35 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
     return false;
 });
 
-////Page navigator needs more thought and work, but it can wait till editor is done.
-//$('#chart').prepend('<a onclick = "loadPrevPage()" href="#'+(currentPage-1)+'" id = pageLeft >PREV</div>')
-//$('#chart').prepend('<a onclick = "loadNextPage()" href="#'+(currentPage + 1)+'" id = pageRight >NEXT<div>')
+///////
+   function restart() {
+   			   link = svg.selectAll('line.link').data(linksTable);
+			   link.enter().insert("line")
+				 .attr("class", "link");
+			   link.exit().remove();
+			   
+			   node = svg.selectAll('svg.node').data(nodes);
+			   var nodeEnter = node.enter().append("svg")
+				 .attr("class", "node")
+				 .attr("x",5)
+				 .attr("y",5)
+				 .attr("name", function(d) {return d['name']})
+				 .attr("width", function(d) {return d['width']})
+				 .attr("height",function(d) {return d['height']})
+		 		 .call(force.drag);
 
-d3.json("/page/"+currentPage+"/links", function(json) {
-   console.log(json)
-    var nodes = json.posts;
-    var nodesHash = getHashTable(nodes,"id")
-    var linksTable = getLinksTable(nodes, nodesHash, json.links);
-
-    console.log("linksTable = " , linksTable);
-    console.log("nodes = " , nodes);
-	
-
-	
-  force
-	  .nodes(json.posts)
-      .links(linksTable)
-      .linkDistance( 250)
-      .charge(-1000)
-      .start();
-  
-  var link = svg.selectAll("line.link")
-      .data(linksTable)
-    .enter().append("line")
-      .attr("class", "link")
-      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+			   nodeEnter.append("rect")
+				 .attr("rx",5)
+				 .attr("ry",5)
+				 .attr("width","100%")
+				 .attr("height","100%");
+			   node.exit().remove;
+			   force.start();
+	   }
 
 
-  var node = svg.selectAll("svg.node")
-		.data(nodes)
-    .enter()
-		.append("svg")
-		  .attr("class", "node")
-		  .attr("name", function(d) {return d['name']})
-		  .attr("width", function(d) {return d['width']})
-		  .attr("height",function(d) {return d['height']})
-		  .call(force.drag);
-		
-		node.append("rect")
-		  .attr("rx",5)
-		  .attr("ry",5)
-		  .attr("width","100%")
-		  .attr("height","100%");
 
-  var label = node.append("text")
-    	  	 .attr("class","text")
-    	  	 .attr("x",40)
-    	  	 .attr("y",40)
-//    	  	 .attr("dx", 20)
-//			 .attr("dy", function(d) {return d['height']/2}) 
-			 .attr("text-anchor", "start") // text-align: right
-    	  	 .text(function(d) { return d['name']; });
- 
-  node.append("title")
-      .text(function(d) { return d['name'] + ", id=" + d['id']; });
-
-svg.select('svg.node[name="booyah"]').append("svg:image") 
-      .attr("xlink:href", "../../header-wood.png") 
-      .attr("x",0)
-      .attr("y",0)
-      .attr("width", 100)
-      .attr("height", 75);
-
-////Modify Elements based on user interaction.
-node.on("click", function(d){
-		switch(toolState) {
-		case "addNode":
-				newRow = nodes.length;
-				nodes[newRow] = {"id":"9999","name":"abababa","width":"25","height":"25"};
-				linksTable[linksTable.length] = {"source": nodes[newRow], "target": d}
-				console.log(nodes, linksTable);
-				var uNode = svg.selectAll('svg.node').data(nodes);
-				var uLink = svg.selectAll('line.link').data(linksTable);
-				uNode.enter().append("svg")
-  				  .attr("class", "node")
-				  .attr("name", function(d) {return d['name']})
-				  .attr("width", function(d) {return d['width']})
-				  .attr("height",function(d) {return d['height']});
-				uNode.append("rect")
-				  .attr("rx",5)
-				  .attr("ry",5)
-				  .attr("width","100%")
-				  .attr("height","100%");
-				uLink.enter().append("line")
-			      .attr("class", "link");
-			d3.event("tick");
-			break
-		
-		}
-	});
-
-    
-  force.on("tick", function(e) {
-
+var tick = function(e) {
     link.attr("x1", function(d) { return d.source.x + (d.source.width/2); })
         .attr("y1", function(d) { return d.source.y + (d.source.height/2); })
         .attr("x2", function(d) { return d.target.x + (d.target.width/2); })
@@ -131,19 +125,14 @@ node.on("click", function(d){
 
     node.attr("x", function(d) { return d.x; })
         .attr("y", function(d) { return d.y; });
-
-  });
-
+}
 
 
-
-
-});
 
 //////////Global functions below//////////
 
 //make or update a hash table of nodes by database id
-  var getHashTable = function(obj,prop) {
+function getHashTable(obj,prop) {
      var hash = [];
      for (n=0; n<obj.length; n++) {
        hash[n] = obj[n][prop];
@@ -152,7 +141,7 @@ node.on("click", function(d){
   }
 
 //initialize and update the table of links
-var getIndexedNodes = function(nodes) {
+function getIndexedNodes(nodes) {
 //apply an index manually. Something to do with the bare object not having an index method built in.
       for (n=0; n<nodes.length; n++) {
        nodes[n].index=n;
@@ -162,7 +151,7 @@ var getIndexedNodes = function(nodes) {
   }
 
 //make or update an assoc. array of links by nodesHash key. We want the links table to refer directly to objects in *nodes*.
-var getLinksTable = function(nodes,hash,links) {
+function getLinksTable(nodes,hash,links) {
     if (!linksTable) {
         var linksTable=[]; //using an array as an associate array in JS is not really proper, but d3 expects to receive data in an array, so tough.
     }
@@ -177,6 +166,63 @@ var getLinksTable = function(nodes,hash,links) {
        return linksTable;
   }
 
+////Build the SVG representation of links
+function drawLinks(linkSelector, data) {  
+	link = linkSelector
+      .data(linksTable)
+    	.enter().append("line")
+        .attr("class", "link")
+}	
+
+
+////Build the SVG representation of nodes
+
+function drawNodes(nodeSelector, data) {
+
+  node = nodeSelector
+		.data(data)
+		.enter()
+			.append("svg")
+			  .attr("class", "node")
+			  .attr("name", function(d) {return d['name']})
+			  .attr("width", function(d) {return d['width']})
+			  .attr("height",function(d) {return d['height']})
+			  .attr("x",50)
+			  .attr("y",50)
+			  .call(force.drag);
+			
+			node.append("rect")
+			  .attr("rx",5)
+			  .attr("ry",5)
+			  .attr("width","100%")
+			  .attr("height","100%");
+
+  var label = node.append("text")
+    	  	 .attr("class","text")
+    	  	 .attr("x",40)
+    	  	 .attr("y",40)
+			 .attr("text-anchor", "start") // text-align: right
+    	  	 .text(function(d) { return d['name']; });
+ 
+	  node.append("title")
+		  .text(function(d) { return d['name'] + ", id=" + d['id']; });
+
+svg.select('svg.node[name="booyah"]').append("svg:image") 
+      .attr("xlink:href", "../../header-wood.png") 
+      .attr("x",0)
+      .attr("y",0)
+      .attr("width", 100)
+      .attr("height", 75);
+}
+
+
+
+
+
+
+
+
+
 //// UI&JQuery Functions
 var hints = new Object();
     hints = {   "nav"       :  {"message": "Click and Drag the boxes below to navigate."},
@@ -184,10 +230,67 @@ var hints = new Object();
                 "addLink"   :  {"message": "Click and drag from one box to another to link them."},
                 "anchor"    :  {"message": "Click and drag a box to position it. It will stick in place where you release it."}};
 console.log(hints['nav']['message']);
+
 var setToolTip = function(toolState) {
     $('#toolbar ul li.tooltip').text(hints[toolState].message);
-}
-
+    ///clear all eventhandlers in this context
+	node = svg.selectAll('svg.node').on("click", null).on("mousedown", null).on("mouseup",null) ;
+	freeze= false;
+	switch(toolState) {
+		case "addNode":
+				node.on("click", function(e){ 
+					newRow = nodes.length;
+					nodes[newRow] = {"id":"9999","name":"abababa","width":"25","height":"25"};
+					linksTable[linksTable.length] = {"source": nodes[newRow], "target": e}
+					restart();
+				});
+			break
+		case "addLink":
+				var newSource= null;
+				node.on('click',function(e){
+					if (!newSource) {
+						newSource= e;
+						console.log(newSource);
+						demoLine = svg.append("line")
+							.attr('stroke-style','dashed')
+							.attr('stroke','#000')
+							.attr('x1', e.x)
+							.attr('y1', e.y)
+							.attr('x2', e.x)
+							.attr('y2', e.y);	
+							
+						$(document).mousemove(function(e){
+							demoLine
+								.attr('x1', newSource.x)
+								.attr('y1', newSource.y)
+								.attr('x2', e.offsetX)
+								.attr('y2', e.offsetY);
+							//if (e.which === 1) { console.log('you depressed a button')}
+							//return false;
+						 });
+						 
+					} else {
+	 					$(document).mousemove(null);
+							alert('you clicked!');
+							demoLine.remove();
+							var newLink = {"source": newSource , "target": e };
+							console.log(newLink);
+							linksTable[linksTable.length]  = newLink;
+							newSource = null;
+							$(document).off('mousemove');
+							restart();
+	 					}
+					//return false;
+				});
+			
+			
+			break;				
+		}
+	}
+    
+    
+    
+});///closes d3
 
 
 
