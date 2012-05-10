@@ -8,7 +8,7 @@ var width = window.innerWidth,
 var color = d3.scale.category20c();
 
 var force = d3.layout.force()
-    .charge(-120)
+    .charge(120)
     .linkDistance(30)
     .size([width, height]);
 
@@ -35,21 +35,22 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
 
 d3.json("/page/"+currentPage+"/links", function(json) {
    console.log(json)
-    var nodesHash = getHashTable(json.posts,"id")
-    var nodes = getIndexedNodes(json.posts);
-    var linksTable = getLinksTable(json.posts, nodesHash, json.links);
+    var nodes = json.posts;
+    var nodesHash = getHashTable(nodes,"id")
+    var linksTable = getLinksTable(nodes, nodesHash, json.links);
 
     console.log("linksTable = " , linksTable);
+    console.log("nodes = " , nodes);
 	
 
 	
   force
-	  .nodes(json.posts, function(d) {return d.id})
+	  .nodes(json.posts)
       .links(linksTable)
-      .linkDistance( function(d) { return d.source.width + d.target.width})
+      .linkDistance( 250)
       .charge(-1000)
       .start();
-
+  
   var link = svg.selectAll("line.link")
       .data(linksTable)
     .enter().append("line")
@@ -58,10 +59,11 @@ d3.json("/page/"+currentPage+"/links", function(json) {
 
 
   var node = svg.selectAll("svg.node")
-		.data(json.posts)
+		.data(nodes)
     .enter()
 		.append("svg")
 		  .attr("class", "node")
+		  .attr("name", function(d) {return d['name']})
 		  .attr("width", function(d) {return d['width']})
 		  .attr("height",function(d) {return d['height']})
 		  .call(force.drag);
@@ -69,8 +71,6 @@ d3.json("/page/"+currentPage+"/links", function(json) {
 		node.append("rect")
 		  .attr("rx",5)
 		  .attr("ry",5)
-		  .attr("stroke", "none")
-		  .attr("stroke-width","0px")
 		  .attr("width","100%")
 		  .attr("height","100%");
 
@@ -83,10 +83,45 @@ d3.json("/page/"+currentPage+"/links", function(json) {
 			 .attr("text-anchor", "start") // text-align: right
     	  	 .text(function(d) { return d['name']; });
  
-  
   node.append("title")
       .text(function(d) { return d['name'] + ", id=" + d['id']; });
 
+svg.select('svg.node[name="booyah"]').append("svg:image") 
+      .attr("xlink:href", "../../header-wood.png") 
+      .attr("x",0)
+      .attr("y",0)
+      .attr("width", 100)
+      .attr("height", 75);
+
+////Modify Elements based on user interaction.
+node.on("click", function(d){
+		switch(toolState) {
+		case "addNode":
+				newRow = nodes.length;
+				nodes[newRow] = {"id":"9999","name":"abababa","width":"25","height":"25"};
+				linksTable[linksTable.length] = {"source": nodes[newRow], "target": d}
+				console.log(nodes, linksTable);
+				var uNode = svg.selectAll('svg.node').data(nodes);
+				var uLink = svg.selectAll('line.link').data(linksTable);
+				uNode.enter().append("svg")
+  				  .attr("class", "node")
+				  .attr("name", function(d) {return d['name']})
+				  .attr("width", function(d) {return d['width']})
+				  .attr("height",function(d) {return d['height']});
+				uNode.append("rect")
+				  .attr("rx",5)
+				  .attr("ry",5)
+				  .attr("width","100%")
+				  .attr("height","100%");
+				uLink.enter().append("line")
+			      .attr("class", "link");
+			d3.event("tick");
+			break
+		
+		}
+	});
+
+    
   force.on("tick", function(e) {
 
     link.attr("x1", function(d) { return d.source.x + (d.source.width/2); })
@@ -96,9 +131,13 @@ d3.json("/page/"+currentPage+"/links", function(json) {
 
     node.attr("x", function(d) { return d.x; })
         .attr("y", function(d) { return d.y; });
-    
 
   });
+
+
+
+
+
 });
 
 //////////Global functions below//////////
@@ -149,7 +188,9 @@ var setToolTip = function(toolState) {
     $('#toolbar ul li.tooltip').text(hints[toolState].message);
 }
 
-//// Add page Nav buttons
+
+
+
 
 
 /////////This is probably all useless, but hold onto it for reference
