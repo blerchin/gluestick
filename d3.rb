@@ -74,6 +74,25 @@ def create_gluestick_graph
   end
 end
 
+def create_pages
+  @neo = Neography::Rest.new
+    
+  root = create_indexed_node("root", "root")
+  
+  num_pages = (1..7)
+  num_posts = (1..20)
+  num_links = (1..45)
+  num_pages.to_a.each do |x|
+	page = create_indexed_node("page", x.to_s)
+	@neo.create_relationship("links", root, page)
+	num_posts.to_a.each do |y|
+		post = create_indexed_node("post", y.to_s)
+		@neo.create_relationship("links", page, post)
+    end
+    
+  end
+end
+
 #### Methods used throughout to manage simple link operations.
 #### Note that the only operation requiring a cypher query is to read and send link structure for front end.
 

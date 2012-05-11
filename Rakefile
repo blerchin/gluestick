@@ -9,4 +9,7 @@ namespace :neo4j do
   task :create_gluestick do
   	create_gluestick_graph
   end
+  task :create_pages do
+  	create_pages
+  end
 end
