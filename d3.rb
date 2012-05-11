@@ -121,7 +121,7 @@ def nodes_links(page)
 
 
 
-#### Here's the setup for our RESTful backend using Sinatra for some high-fructose sweetness.
+#### Here's the setup for our RESTful backend using Sinatra.
 
 
 ## Load the front end editor. Need to work out a way to select/navigate through pages.
@@ -154,16 +154,21 @@ get '/page/:page/post/:name' do
 
 ## Link two posts
 get '/page/:page/post/:post1/links/:post2' do
+	protected!
 	create_link( get_post_in_page(params[:post1], params[:page]), get_post_in_page(params[:post2], params[:page]) ).to_json
 end
 
-#### DEVELOPMENT METHODS --- Not to be available in this form for production
-#### (in some cases that just means changing GET to POST or DELETE)
+##Delete a post
+get '/page/:page/post/name/:name/delete' do
+   Neography::Node.load(get_post_in_page( params[:name], params[:page] ) ).del
+end
+
 
 ## Does what it says. Create a new node on a given page.
-get '/page/:page/post/new/:name' do
+get '/page/:page/post/new/name/:name' do
+	protected!
 	page = Neography::Node.load(get_page(params[:page]))
-	new_post = Neography::Node.create("name" => params[:name], "type" => "post")
+	new_post = Neography::Node.create("name" => params[:name], "type" => "post", "href" =>params[:href] )
 	page.both(:links) << new_post
 	{data:[ {"neo_id" => new_post.neo_id, "name" => new_post.name, "links" => new_post.outgoing(:links).map{|n| n.neo_id} }]}.to_json
 	

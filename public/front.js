@@ -111,6 +111,17 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
 				 .attr("ry",5)
 				 .attr("width","100%")
 				 .attr("height","100%");
+				 
+			var label = nodeEnter.append("text")
+				 .attr("class","text")
+				 .attr("x",40)
+				 .attr("y",40)
+				 .attr("text-anchor", "start") // text-align: right
+				 .text(function(d) { return d['name']; });
+ 
+			  nodeEnter.append("title")
+				  .text(function(d) { return d['name'] + ", id=" + d['id']; });
+				 
 			   node.exit().remove;
 			   force.start();
 	   }
@@ -228,7 +239,8 @@ var hints = new Object();
     hints = {   "nav"       :  {"message": "Click and Drag the boxes below to navigate."},
                 "addNode"   :  {"message": "Click a box below to connect it to a new one."},
                 "addLink"   :  {"message": "Click and drag from one box to another to link them."},
-                "anchor"    :  {"message": "Click and drag a box to position it. It will stick in place where you release it."}};
+                "anchor"    :  {"message": "Click and drag a box to position it. It will stick in place where you release it."},
+                "delete"    :  {"message": "Click the node you wish to remove."} };
 console.log(hints['nav']['message']);
 
 var setToolTip = function(toolState) {
@@ -240,8 +252,19 @@ var setToolTip = function(toolState) {
 		case "addNode":
 				node.on("click", function(e){ 
 					newRow = nodes.length;
-					nodes[newRow] = {"id":"9999","name":"abababa","width":"25","height":"25"};
+					nodes[newRow] = {"id":"99999999","name":"Untitled","width":"100","height":"75"};
 					linksTable[linksTable.length] = {"source": nodes[newRow], "target": e}
+					d = new Date();
+					var id;
+					var name;
+					d3.json('/page/'+currentPage+'/post/new/name/'+d.getTime() , function(data) {
+							name = data['data'][0]['name'];
+							id = data['data'][0]['id'];
+  						    nodes[newRow]['name'] = name;
+  						    nodes[newRow]['id'] = id; 
+							  });
+					d3.json('/page/'+currentPage+'/post/'+name+'/links/'+e.name , function(data) {});
+
 					restart();
 				});
 			break
@@ -271,20 +294,31 @@ var setToolTip = function(toolState) {
 						 
 					} else {
 	 					$(document).mousemove(null);
-							alert('you clicked!');
 							demoLine.remove();
 							var newLink = {"source": newSource , "target": e };
 							console.log(newLink);
 							linksTable[linksTable.length]  = newLink;
 							newSource = null;
 							$(document).off('mousemove');
+							d3.json('/page/'+currentPage+'/post/'+newLink.source.name+'/links/'+newLink.target.name , function(data) {});
 							restart();
 	 					}
 					//return false;
 				});
 			
+			break;	
+			case 'delete':
 			
-			break;				
+				node.on("click", function(e){ 
+						d3.json('/page/'+currentPage+'/post/name/'+e.name+'/delete' , function(data) {
+								  });
+						console.log(nodes[e.index]);
+						nodes.splice(e.index,1);
+	
+						restart();
+					});
+			break
+						
 		}
 	}
     
