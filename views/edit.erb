@@ -6,6 +6,10 @@
     <title>Pasteboard - Edit</title>
     <script type="text/javascript" src="<%=params[:root] %>/d3.v2.js"></script>
     <script type="text/javascript" src="<%=params[:root] %>/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="<%=params[:root] %>/helperFunctions.js"></script>
+    <script type="text/javascript" src="<%=params[:root] %>/draw.js"></script>
+    <script type="text/javascript" src="<%=params[:root] %>/interactions.js"></script>
+    <script type="text/javascript" src="<%=params[:root] %>/ajax.js"></script>
     <link rel="stylesheet" type="text/css" href="<%=params[:root] %>/gluestick-ui.css" />
   </head>
   <body>
@@ -20,6 +24,7 @@
                 <li><a href="#" class="toolSetter" action="addNode">+node</a></li>
                 <li><a href="#" class="toolSetter" action="delete">-node</a></li>
                 <li><a href="#" class="toolSetter" action="addLink">+link</a></li>
+                <li><a href="#" class="toolSetter" action="refresh">refresh</a></li>
                 <!--<li><a href="#" class="toolSetter" action="anchor">+anchor</a></li>-->
                 <li class="tooltip"></li>
             </ul>

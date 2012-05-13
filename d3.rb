@@ -92,6 +92,12 @@ def create_pages
     
   end
 end
+
+
+
+
+
+
 ###Find duplicates in an array and place count next to uniq values
 def dup_hash(ary)
   ary.inject(Hash.new(0)) { |h,e| h[e] += 1; h }.select { 
@@ -104,6 +110,11 @@ def new_dup_hash(ary)
 end
 
 #### Methods used throughout to manage simple link operations.
+def get_node(id)
+	neo = Neography::Rest.new
+	neo.get_node(id)
+	end
+
 
 def create_link(source,target)
   neo = Neography::Rest.new
@@ -115,7 +126,7 @@ def create_link(source,target)
   #	weight ? weight+=1 : weight=1
   #	neo.set_relationship_properties(x, {"weight" => weight})
   #	end
-end
+  end
 
 def get_post_by_name(name)
   neo = Neography::Rest.new
@@ -193,9 +204,9 @@ get '/page/:page/post/:name' do
 
 
 ## Link two posts
-get '/page/:page/post/:post1/links/:post2' do
+get '/post/:post1/links/:post2' do
 	protected!
-	create_link( get_post_in_page(params[:post1], params[:page]), get_post_in_page(params[:post2], params[:page]) ).to_json
+	create_link( get_node(params[:post1]), get_node(params[:post2]) ).to_json
 end
 
 ##Delete a post
@@ -211,7 +222,6 @@ get '/page/:page/post/new/name/:name/href/:href' do
 	new_post = Neography::Node.create("name" => params[:name], "type" => "post", "href" =>params[:href] )
 	page.both(:links) << new_post
 	{data:[ {"neo_id" => new_post.neo_id, "name" => new_post.name, "links" => new_post.outgoing(:links).map{|n| n.neo_id} }]}.to_json
-	
 	end
 
 
