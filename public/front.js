@@ -56,7 +56,7 @@ d3.json("/page/"+currentPage+"/links", function(json) {
     var nodes = json.posts;
     var nodesHash = getHashTable(nodes,"id");
     var linksTable = getLinksTable(nodes, nodesHash, json.links);
-
+	
     console.log("linksTable = " , linksTable);
     console.log("nodes = " , nodes);
 	
@@ -66,8 +66,10 @@ var freeze = false;
   force
 	  .nodes(nodes)
       .links(linksTable)
-      .linkDistance(175)
-      //function(d){return .75*(d.source.width + d.target.width)})
+      .charge(function(d) {return -2*Math.pow(d.weight*10, 2.0) })
+      .gravity(.1)
+      .friction(.7)
+      .linkDistance(function(d) {return (30*1/Math.pow(d.value,2));})
       .start();
 
 	drawLinks(svg.selectAll('svg line.link'), linksTable);
@@ -102,8 +104,8 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
 				 .attr("x",5)
 				 .attr("y",5)
 				 .attr("name", function(d) {return d['name']})
-				 .attr("width", function(d) {return d['width']})
-				 .attr("height",function(d) {return d['height']})
+				 .attr("width", function(d) {return d.weight*5 })
+				 .attr("height",function(d) {return d.weight*3.3})
 		 		 .call(force.drag);
 
 			   nodeEnter.append("rect")
@@ -129,10 +131,10 @@ $('div#toolbar ul li a.toolSetter').click(function(e){
 
 
 var tick = function(e) {
-    link.attr("x1", function(d) { return d.source.x + (d.source.width/2); })
-        .attr("y1", function(d) { return d.source.y + (d.source.height/2); })
-        .attr("x2", function(d) { return d.target.x + (d.target.width/2); })
-        .attr("y2", function(d) { return d.target.y + (d.target.height/2); });
+    link.attr("x1", function(d) { return d.source.x + (d.source.weight*6); })
+        .attr("y1", function(d) { return d.source.y + (d.source.weight*4.5); })
+        .attr("x2", function(d) { return d.target.x + (d.target.weight*6); })
+        .attr("y2", function(d) { return d.target.y + (d.target.weight*4.5); });
 
     node.attr("x", function(d) { return d.x; })
         .attr("y", function(d) { return d.y; });
@@ -171,7 +173,7 @@ function getLinksTable(nodes,hash,links) {
        var targetNode = nodes[hash.indexOf(links[n].target)];
        if (sourceNode && targetNode) {
            linksTable[linksTable.length++] = {"source": sourceNode,
-    						"target": targetNode , "value": 5 };
+    						"target": targetNode , "value": links[n]['value'] };
     		}
        }
        return linksTable;
@@ -183,6 +185,7 @@ function drawLinks(linkSelector, data) {
       .data(linksTable)
     	.enter().append("line")
         .attr("class", "link")
+        .attr("stroke-width", function(d){ return 2* d.value});
 }	
 
 
@@ -196,8 +199,8 @@ function drawNodes(nodeSelector, data) {
 			.append("svg")
 			  .attr("class", "node")
 			  .attr("name", function(d) {return d['name']})
-			  .attr("width", function(d) {return d['width']})
-			  .attr("height",function(d) {return d['height']})
+			  .attr("width", function(d) {return d.weight*12 })
+			  .attr("height",function(d) {return d.weight*9})
 			  .attr("x",50)
 			  .attr("y",50)
 			  .call(force.drag);
@@ -288,19 +291,16 @@ var setToolTip = function(toolState) {
 								.attr('y1', newSource.y)
 								.attr('x2', e.offsetX)
 								.attr('y2', e.offsetY);
-							//if (e.which === 1) { console.log('you depressed a button')}
-							//return false;
 						 });
 						 
 					} else {
 	 					$(document).mousemove(null);
 							demoLine.remove();
 							var newLink = {"source": newSource , "target": e };
-							console.log(newLink);
-							linksTable[linksTable.length]  = newLink;
+							//linksTable[linksTable.length]  = newLink;
 							newSource = null;
 							$(document).off('mousemove');
-							d3.json('/page/'+currentPage+'/post/'+newLink.source.name+'/links/'+newLink.target.name , function(data) {});
+							//d3.json('/page/'+currentPage+'/post/'+newLink.source.name+'/links/'+newLink.target.name , function(data) {});
 							restart();
 	 					}
 					//return false;
@@ -321,14 +321,36 @@ var setToolTip = function(toolState) {
 						
 		}
 	}
-    
-    
+
+
     
 });///closes d3
 
+/////General purpose useful functions
 
+function findSameLink( link, obj) {
+	var possibles = findNodeLinks( link.source, obj);
+	var comparator = [link.source,link.target]
+	var results = [];
+	for (n in possibles) {
+		if (comparator.indexOf(n.source) >= 0 && comparator.indexOf(n.target) >= 0) {
+			results.push(n); }
+			}
+	return results
+	}		
+		
+		
+function findNodeLinks(search, table) {
+	var results = [];
+	for (n in table) {
+    	if (n.source === search) {results.push(n)};
+    	}
+    return results;
+	}
 
-
+function has (obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
 
 /////////This is probably all useless, but hold onto it for reference
 
@@ -338,7 +360,7 @@ push = function(record, dest) {
 map = function (func, object) {
   var result = [];
   for (n in object) {
-    push(func(n), result);
+    result.push(func(n));
   }
   return result;
 }

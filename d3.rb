@@ -92,18 +92,30 @@ def create_pages
     
   end
 end
+###Find duplicates in an array and place count next to uniq values
+def dup_hash(ary)
+  ary.inject(Hash.new(0)) { |h,e| h[e] += 1; h }.select { 
+    |k,v| v > 1 }.inject({}) { |r, e| r[e.first] = e.last; r }
+end
+def new_dup_hash(ary)
+	h = Hash.new(0)
+	ary.each { |v| h.store(v, h[v]+1) }
+	h
+end
 
 #### Methods used throughout to manage simple link operations.
-#### Note that the only operation requiring a cypher query is to read and send link structure for front end.
-
-  
-
 
 def create_link(source,target)
   neo = Neography::Rest.new
-  neo.create_relationship("links", source, target)
-  neo.create_relationship("links", target, source)
-  end
+  rel = []
+  rel[0] = neo.create_relationship("links", source, target)
+  rel[1] = neo.create_relationship("links", target, source)
+  #rel.each do |x| 
+  #	weight = neo.get_relationship_properties(x, "weight")
+  #	weight ? weight+=1 : weight=1
+  #	neo.set_relationship_properties(x, {"weight" => weight})
+  #	end
+end
 
 def get_post_by_name(name)
   neo = Neography::Rest.new
@@ -131,9 +143,9 @@ def get_post_in_page(name, page)
 def nodes_links(page)
   neo = Neography::Rest.new
   cypher_query =  "START a = node:nodes_index(type='page')"
-  cypher_query << "MATCH (a)-[:links]->(b), p= (b)-[?:links]->(c)"
+  cypher_query << "MATCH (a)-[:links]->(b), p=(b)-[?:links]->(c)"
   cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post' AND c.type ?= 'post' "
-  cypher_query << "RETURN ID(b), b.name, extract(n in nodes(p) : ID(n) )"
+  cypher_query << "RETURN ID(b), b.name, b.href?, extract(n in nodes(p) : ID(n) )"
   result = neo.execute_query(cypher_query)
   if result then result else raise "cypher error" end
   end
@@ -154,9 +166,18 @@ end
 get '/page/:page/links' do
 	table = nodes_links(params[:page])['data']
 	
-	 {  "posts" => table.map{|n| {"id" => n[0] , "name" => n[1], "width"=>100, "height"=>75 } }.uniq ,
-  	  	"links" => table.map{|l| l[2] ? {"source" => l[2][0] , "target" => l[2][1] } : nil }.compact }.to_json
+	list = {   "posts" => table.map{|n| {"id" => n[0] , "name" => n[1], "href" => n[2], "width"=>100, "height"=>75 } }.uniq ,
+		  	  	"links" => table.map{|l| l[3] ? {"source" => l[3][0] , "target" => l[3][1] } : nil }.compact }
+
+	###Get rid of duplicate links, but add a count of connections to each unique record.
+	de_duped_links = new_dup_hash(list['links']).map{|l,c| { "source" => l['source'], "target" => l['target'], "value" => c}}
+
+	{ "posts" => list['posts'], "links" => de_duped_links }.to_json
 end
+get'/page/:page/debug' do
+	nodes_links(params[:page])['data'].to_json
+end
+
 
 ## Get the page node. 
 ## Not really sure when this would be useful so it may belong in the dev section.
@@ -184,7 +205,7 @@ end
 
 
 ## Does what it says. Create a new node on a given page.
-get '/page/:page/post/new/name/:name' do
+get '/page/:page/post/new/name/:name/href/:href' do
 	protected!
 	page = Neography::Node.load(get_page(params[:page]))
 	new_post = Neography::Node.create("name" => params[:name], "type" => "post", "href" =>params[:href] )
