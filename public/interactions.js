@@ -8,21 +8,20 @@ var setToolTip = function(toolState) {
 	switch(toolState) {
 		case "addNode":
 				node.on("click", function(e){ 
-					newRow = nodes.length;
-					nodes[newRow] = {"id":"99999999","name":"Untitled","weight":2};
-					linksTable[linksTable.length] = {"source": nodes[newRow], "target": e, "value": 4 }
-					d = new Date();
-					var id;
-					var name;
-					$.getJSON('/page/'+currentPage+'/post/new/name/'+d.getTime()+'/href/null' , function(data) {
-							name = data['data'][0]['name'];
-							id = data['data'][0]['neo_id'];
+					//newRow = nodes.length;
+					d = Date.getTime;
+					//nodes[newRow] = {"id":d,"name":"Untitled","weight":2};
+					//linksTable[linksTable.length] = {"source": nodes[newRow], "target": e, "value": 4 }
+
+					//var id;
+					//var name;
+					$.getJSON('/page/'+getPage()+'/post/new/name/'+d+'/href/null' , function(data) {
+							var name = data['data'][0]['name'];
+							var id = data['data'][0]['neo_id'];
 							  $.getJSON('/post/'+id+'/links/'+e.id , function(data) {
-									updateJson();
+									updateGraph();
 								});
-							  });
-					//restart(); ///restart once with temporary local data
-					
+							  });					
 					
 
 					
@@ -57,12 +56,10 @@ var setToolTip = function(toolState) {
 							demoLine.remove();
 							var newLink = {"source": newSource , "target": e, "value": 2 };
 							console.log(newLink);
-							linksTable[linksTable.length]  = newLink;
-							restart();
 							newSource = null;
 							$(document).off('mousemove');
 							d3.json('/post/'+newLink.source.id+'/links/'+newLink.target.id , function(data) {
-								updateJson();
+								updateGraph();
 							});
 							
 	 					}
@@ -71,19 +68,31 @@ var setToolTip = function(toolState) {
 			
 			break;	
 			case 'delete':
-			
 				node.on("click", function(e){ 
-						d3.json('/page/'+currentPage+'/post/name/'+e.name+'/delete' , function(data) {
-								  });
-						console.log(nodes[e.index]);
-						nodes.splice(e.index,1);
-	
-						restart();
+					$.getJSON('/post/id/'+e.id+'/delete' , function(data) {
+						updateGraph();
+						});
 					});
-			break
+			break;
+			
+			case 'anchor':
+				node.on("mousedown", function(e){
+					e.fixed = 3;
+					});
+				node.on("dblclick", function(e){
+					e.fixed = 0;
+					});
+				node.on("mouseout", function(e){
+					var url = '/post/id/'+e.id+'/fixed/'+ (e.fixed ? e.fixed + '/'+e.x+'/'+e.y : '/');
+					$.getJSON(url, function(data) {
+						console.log(data);
+						});
+					});  
+					
+			break;
 			case 'refresh':
-				updateJson();
-			break
+				updateGraph();
+			break;
 						
 		}
 	}

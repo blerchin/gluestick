@@ -1,8 +1,9 @@
 /////Ajax functionality
 
+
 ///Get JSON from server and return via a callback
-function fetchJson(callback) {
-	var json = $.getJSON("/page/"+currentPage+"/links", function(json) {
+function fetchJson(url,callback) {
+	var json = $.getJSON(url, function(json) {
 				var fetchedLinks = createLinksTable(json.posts, json.links);
 				return callback({ "nodes" : json.posts , "links" : fetchedLinks});
 				});
@@ -20,21 +21,19 @@ function createLinksTable(localNodes, localLinks) {
 	}
 
 
-function updateJson(){
-	fetchJson(function(data){
-		restart(data.nodes, data.links);
-
-	});
-}
 
 
 ////Redraw and Restart the force simulator after modifying data
-function restart(nodes, links) {
-		   force.nodes(nodes).links(links).start();
+function restart(nodes, links, init) {
+		   if (init) {force.nodes(nodes).links(links).start();}
+		   //Eventually we need to add diffs to existing arrays. For now, just reload the damn thing.
+		   else { force.nodes(nodes).links(links).start();} 
 		   
 		   link = svg.selectAll('line.link').data(links);
-		   link.enter().insert("line")
-			 .attr("class", "link");
+		   link.enter().append("line")
+			 .attr("class", "link")
+	         .attr("stroke-width", function(d){ return 2* d.value});
+
 		   link.exit().remove();
 		   
 		   node = svg.selectAll('svg.node').data(nodes);
@@ -44,15 +43,16 @@ function restart(nodes, links) {
 			 .attr("x",5)
 			 .attr("y",5)
 			 .attr("name", function(d) {return d['name']})
-			 .attr("width", function(d) {return d.weight*12 })
-			 .attr("height",function(d) {return d.weight*9})
+			 .attr("width", function(d) {return (d.weight+2)*12 })
+			 .attr("height",function(d) {return (d.weight+2)*9})
 			 .call(force.drag);
 
 		   nodeEnter.append("rect")
 			 .attr("rx",5)
 			 .attr("ry",5)
 			 .attr("width","100%")
-			 .attr("height","100%");
+			 .attr("height","100%")
+			 .attr("fill","#eee");
 			 
 		var label = nodeEnter.append("text")
 			 .attr("class","text")
@@ -64,7 +64,7 @@ function restart(nodes, links) {
 		  nodeEnter.append("title")
 			  .text(function(d) { return d['name'] + ", id=" + d['id']; });
 			 
-		   node.exit().remove;
+		   node.exit().remove();
    }
    
    

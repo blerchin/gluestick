@@ -64,7 +64,7 @@ function hint(tool) {
                 "addLink"   :  {"message": "Click and drag from one box to another to link them."},
                 "anchor"    :  {"message": "Click and drag a box to position it. It will stick in place where you release it."},
                 "delete"    :  {"message": "Click the node you wish to remove."},
-                "refresh"	:  {"message": "  "}  };
+                "refresh"	:  {"message": "Changes loaded."}  };
     return hints[tool]['message'];
 	}
 	

@@ -117,7 +117,7 @@ a#pageRight {
     color: #00000;
     background-color: #eee;
 }
-#toolbar ul li a.current {
+#toolbar ul li a.active {
     color:#000;
     background-color: #aaa;
 }

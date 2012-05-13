@@ -93,6 +93,18 @@ def create_pages
   end
 end
 
+def add_page(page_num)
+  @neo = Neography::Rest.new
+  num_posts = (1..20)
+  
+  root = @neo.get_node_index("nodes_index", "type", "root")
+  page = create_indexed_node("page", page_num.to_s)
+  @neo.create_relationship("links", root, page)
+		 num_posts.to_a.each do |y|
+			post = create_indexed_node("post", y.to_s)
+			@neo.create_relationship("links", page, post)  		 
+			end
+  end
 
 
 
@@ -154,14 +166,12 @@ def get_post_in_page(name, page)
 def nodes_links(page)
   neo = Neography::Rest.new
   cypher_query =  "START a = node:nodes_index(type='page')"
-  cypher_query << "MATCH (a)-[:links]->(b), p=(b)-[?:links]->(c)"
+  cypher_query << "MATCH (a)-[:links]->(b), p=(b)-[?]->(c)"
   cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post' AND c.type ?= 'post' "
-  cypher_query << "RETURN ID(b), b.name, b.href?, extract(n in nodes(p) : ID(n) )"
+  cypher_query << "RETURN ID(b), b.name?, b.href?, b.fixed?, extract(n in nodes(p) : ID(n) )"
   result = neo.execute_query(cypher_query)
-  if result then result else raise "cypher error" end
+  if result then result else nil end
   end
-
-
 
 #### Here's the setup for our RESTful backend using Sinatra.
 
@@ -172,20 +182,23 @@ get '/edit/page/*' do
     erb:edit
 end
 
-## This is the big one. Read all of the posts+links associated with a given page 
+## Read all of the posts+links associated with a given page 
 ## and send them to the front end.
 get '/page/:page/links' do
 	table = nodes_links(params[:page])['data']
-	
-	list = {   "posts" => table.map{|n| {"id" => n[0] , "name" => n[1], "href" => n[2], "width"=>100, "height"=>75 } }.uniq ,
-		  	  	"links" => table.map{|l| l[3] ? {"source" => l[3][0] , "target" => l[3][1] } : nil }.compact }
+	if(!table[0]) then add_page(params[:page])
+					table=nodes_links(params[:page])['data']
+			   end
+	list = {   "posts" => table.map{|n| {"id" => n[0] , "name" => n[1], "href" => n[2], "fixed"=>n[3] } }.uniq ,
+		  	  	"links" => table.map{|l| l[4] ? {"source" => l[4][0] , "target" => l[4][1] } : nil }.compact }
 
 	###Get rid of duplicate links, but add a count of connections to each unique record.
 	de_duped_links = new_dup_hash(list['links']).map{|l,c| { "source" => l['source'], "target" => l['target'], "value" => c}}
 
 	{ "posts" => list['posts'], "links" => de_duped_links }.to_json
 end
-get'/page/:page/debug' do
+
+get'/page/:page/cypher_debug' do
 	nodes_links(params[:page])['data'].to_json
 end
 
@@ -210,19 +223,34 @@ get '/post/:post1/links/:post2' do
 end
 
 ##Delete a post
-get '/page/:page/post/name/:name/delete' do
-   Neography::Node.load(get_post_in_page( params[:name], params[:page] ) ).del
+get '/post/id/:id/delete' do
+   Neography::Node.load(params[:id] ).del
 end
 
+##Set a post's fixed status
+get '/post/id/:id/fixed/?:fixed?/?:x?/?:y?' do
+   neo = Neography::Rest.new
+   if (params[:id]) then
+     neo.set_node_properties( get_node(params[:id]), { "fixed" => params[:fixed], "x" => params[:x], "y" => params[:y] })
+   else
+	 neo.set_node_properties( get_node(params[:id]), { "fixed" => params[:fixed] })
+   end
+  neo.get_node_properties( get_node(params[:id])).to_json
+end
 
 ## Does what it says. Create a new node on a given page.
 get '/page/:page/post/new/name/:name/href/:href' do
 	protected!
 	page = Neography::Node.load(get_page(params[:page]))
-	new_post = Neography::Node.create("name" => params[:name], "type" => "post", "href" =>params[:href] )
+	new_post = Neography::Node.create("name" => params[:name], "type" => "post", "href" =>params[:href], "fixed" =>false )
 	page.both(:links) << new_post
 	{data:[ {"neo_id" => new_post.neo_id, "name" => new_post.name, "links" => new_post.outgoing(:links).map{|n| n.neo_id} }]}.to_json
 	end
+
+
+
+
+
 
 
 ## Just for testing. Confirm existence of an index.
@@ -234,12 +262,4 @@ end
 ## Just for testing. Get raw cypher query.
 get '/page/:page/list_all' do
 	nodes_links(params[:page]).to_json
-end
-
-## Hmmm this probably doesn't need to exist
-get '/nodes/new/id/:theId' do
-	neo = Neography::Rest.new
-	if neo.create_unique_node( "id" => params[:theId], "type" => "debug") then
-		"made a node with id = #{params[:theId]}"
- 	end
 end
