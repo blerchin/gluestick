@@ -25,8 +25,8 @@ $(document).ready(function() {
 	drawGrid(svg);
 	$('div#toolbar ul li a.toolSetter').click(function(e){
 		e.preventDefault();
-		$('div#toolbar ul li a.toolSetter').removeClass('active');
-		$('this').addClass('active');
+		$('div#toolbar ul li a').removeClass('active');
+		$(this).addClass('active');
 		toolState= $(this).attr('action');
 		setToolTip(toolState);
 		console.log("toolState is now ",toolState);

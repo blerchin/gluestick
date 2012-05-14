@@ -50,6 +50,10 @@ var setToolTip = function(toolState) {
 								.attr('x2', e.offsetX)
 								.attr('y2', e.offsetY);
 						 });
+						 $(document).on("mouseleave", function(e) {
+							 demoLine.remove();
+							 return;
+						 	});
 						 
 					} else {
 	 					$(document).mousemove(null);
@@ -58,12 +62,13 @@ var setToolTip = function(toolState) {
 							console.log(newLink);
 							newSource = null;
 							$(document).off('mousemove');
-							d3.json('/post/'+newLink.source.id+'/links/'+newLink.target.id , function(data) {
-								updateGraph();
-							});
-							
+							if(newLink.source && newLink.target) {	
+								d3.json('/post/'+newLink.source.id+'/links/'+newLink.target.id , function(data) {
+									updateGraph();
+								});
+							}
 	 					}
-					//return false;
+					return false;
 				});
 			
 			break;	

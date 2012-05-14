@@ -56,9 +56,11 @@ function restart(nodes, links, init) {
 			 
 		var label = nodeEnter.append("text")
 			 .attr("class","text")
-			 .attr("x",40)
-			 .attr("y",40)
-			 .attr("text-anchor", "start") // text-align: right
+			 .attr("x",10)
+			 .attr("y",10)
+			 .attr("width", "100%")
+			 .attr("height", "100%")
+			 .attr("text-anchor", "middle") 
 			 .text(function(d) { return d['name']; });
 
 		  nodeEnter.append("title")
