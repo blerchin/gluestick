@@ -94,11 +94,13 @@ var setToolTip = function(toolState) {
 					});
 				node.on("dblclick", function(e){
 					e.fixed = 0;
+					e.x = 0;
+					e.y = 0;
 					});
 				node.on("mouseout", function(e){
 					var url = '/post/id/'+e.id+'/fixed/'
 					$.ajax({url: url, dataType: 'json', 
-						data: { "fixed": e.fixed, "x": e.x,"y":e.y},
+						data: { "fixed": e.fixed, "x": Number(e.x),"y":Number(e.y)},
 						success: function(data) {
 							console.log(data);
 							}
