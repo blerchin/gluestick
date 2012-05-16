@@ -18,12 +18,9 @@ $(document).ready(function() {
 	$(window).bind('hashchange', function() {
 		loadPage(getPage());
 	});
-////Yeah, so this really doesn't work right.	
-/*	$(window).resize(function() {
-		canvas_size();
-		loadPage(getPage());
-		});
-*/	
+
+	$('#chart').addClass('page'+getPage());
+	
 	drawGrid(svg);
 	setToolTip(toolState);
 	$('div#toolbar ul li a.toolSetter').click(function(e){
