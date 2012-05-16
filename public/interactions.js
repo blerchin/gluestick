@@ -96,10 +96,13 @@ var setToolTip = function(toolState) {
 					e.fixed = 0;
 					});
 				node.on("mouseout", function(e){
-					var url = '/post/id/'+e.id+'/fixed/'+ (e.fixed ? e.fixed + '/'+e.x+'/'+e.y : '/false');
-					$.getJSON(url, function(data) {
-						console.log(data);
-						});
+					var url = '/post/id/'+e.id+'/fixed/'
+					$.ajax({url: url, dataType: 'json', 
+						data: { "fixed": e.fixed, "x": e.x,"y":e.y},
+						success: function(data) {
+							console.log(data);
+							}
+							});
 					});  
 					
 			break;
