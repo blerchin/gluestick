@@ -8,8 +8,8 @@ var svg = d3.select("#chart").append("svg")
 		.attr("width", width)
 		.attr("height", height);
 //var color = d3.scale.category20c();
-    
 var toolState="nav";
+    
 
 	
 $(document).ready(function() {
@@ -25,6 +25,7 @@ $(document).ready(function() {
 		});
 */	
 	drawGrid(svg);
+	setToolTip(toolState);
 	$('div#toolbar ul li a.toolSetter').click(function(e){
 		e.preventDefault();
 		$('div#toolbar ul li a').removeClass('active');
@@ -56,6 +57,7 @@ var force = d3.layout.force()
 function startGraph(page){
 	fetchJson("/page/"+page+"/links",function(data){
 		restart(data.nodes, data.links, true);
+		return data.links;
 		});
 	}
 
@@ -67,9 +69,6 @@ function updateGraph(){
 
 
 // Front End / UI functions
-
-
-
 
 //Deal with links/graphs based on bookmarkable URLs
 function loadPage(page) {

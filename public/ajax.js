@@ -16,6 +16,7 @@ function createLinksTable(localNodes, localLinks) {
 	var localHash = getHashTable(localNodes,"id");
 	console.log(localHash);
 	table = getLinksTable(getIndexedNodes(localNodes), localHash, localLinks);
+	console.log(table);
 	return table;
 	}
 
@@ -75,6 +76,13 @@ function restart(nodes, links, init) {
 	   			    .html(function(d) { 
 				 		return '<p>'+d.name+'</p>';  });
 */
+		var nodesWithImage = node.filter(function(d) { 
+										return d.img != ( null && "img src");}); 
+		nodesWithImage.append('image')
+			.attr('xlink:href', function(d) {return d.img})
+			.attr("width", "100%")
+			.attr("height", "100%");
+		
 		node.selectAll('text').remove();
 
 		var label = node.append("text")

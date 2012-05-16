@@ -137,6 +137,9 @@ a#pageRight {
 svg.node {
 	position: relative;
 }
+svg.node rect:hover {
+	fill: #555;
+	}
 svg.node rect {
 	/*stroke: #333;
 	stroke-width: .5px;*/

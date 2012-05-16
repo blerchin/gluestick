@@ -3,9 +3,17 @@
 var setToolTip = function(toolState) {
     $('#toolbar ul li.tooltip').text(hint(toolState));
     ///clear all eventhandlers in this context
-	node = svg.selectAll('svg.node').on("click", null).on("mousedown", null).on("mouseup",null) ;
+	node = svg.selectAll('svg.node').on("click", null).on("mousedown", null).on("mouseup",null).on("mouseout",null) ;
 	if(typeof demoLine != 'undefined'){ demoLine.remove() };
 	switch(toolState) {
+		case "nav":
+			node.on("click", function(e) {
+				if (e.href != ('url' && "null") ) {
+					//console.log(e.href);
+					window.location.href=e.href;
+					}});
+			
+		break;
 		case "addNode":
 				node.on("click", function(e){ 
 					//newRow = nodes.length;
@@ -94,6 +102,8 @@ var setToolTip = function(toolState) {
 					});
 				node.on("dblclick", function(e){
 					e.fixed = 0;
+					//This is a sloppy fix for NaNs getting sent to DB and fucking shit up.
+					//A better fix would filter vals received on backend and deal with exceptions on front.
 					e.x = 0;
 					e.y = 0;
 					});
@@ -116,7 +126,8 @@ var setToolTip = function(toolState) {
 					force.stop();
 					$('#chart').append('<div class = "editBox">\
 												<textarea id="name">'+e.name+'</textarea>\
-												<input id="href" val=("'+( e.href ? e.href.toString() : 'url')+'") />\
+												<input id="img" value="'+( e.img ? e.img.toString() : 'img src')+'" />\
+												<input id="href" value="'+( e.href ? e.href.toString() : 'url')+'" />\
 												<button id="editSave" onclick="saveData('+e.id+')" val="save">Save</button>\
 												</div>');
 					var editBox = $('#chart div.editBox');
@@ -134,9 +145,10 @@ function saveData(nodeId){
 							url: '/post/id/'+nodeId+'/update/',
 							dataType: 'json',
 							data: {"name": editBox.find('textarea#name').val(),
-								   "href": editBox.find('input#href').val()},
-							success: function() {
-								console.log('data saved!');
+								   "href": editBox.find('input#href').val(),
+								   "img": editBox.find('input#img').val() },
+							success: function(data) {
+								console.log('data saved!', data);
 								editBox.remove();
 								updateGraph();
 								}

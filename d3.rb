@@ -168,7 +168,7 @@ def nodes_links(page)
   cypher_query =  "START a = node:nodes_index(type='page')"
   cypher_query << "MATCH (a)-[:links]->(b), p=(b)-[?]->(c)"
   cypher_query << "WHERE a.name = \'#{page}\' AND b.type = 'post' AND c.type ?= 'post' "
-  cypher_query << "RETURN ID(b), b.name?, b.href?, b.fixed?, b.x?, b.y?, extract(n in nodes(p) : ID(n) )"
+  cypher_query << "RETURN ID(b), b.name?, extract(n in nodes(p) : ID(n) ), b.href?, b.img?, b.fixed?, b.x?, b.y?"
   result = neo.execute_query(cypher_query)
   if result then result else nil end
   end
@@ -200,8 +200,8 @@ get '/page/:page/links' do
 	if(!table[0]) then add_page(params[:page])
 					table=nodes_links(params[:page])['data']
 			   end
-	list = {   "posts" => table.map{|n| {"id" => n[0] , "name" => n[1], "href" => n[2], "fixed"=>n[3], "x"=>n[4], "y"=>n[5] } }.uniq ,
-		  	  	"links" => table.map{|l| l[6] ? {"source" => l[6][0] , "target" => l[6][1] } : nil }.compact }
+	list = {   "posts" => table.map{|n| {"id" => n[0] , "name" => n[1], "href" => n[3], "img"=> n[4], "fixed"=>n[5], "x"=>n[6], "y"=>n[7] } }.uniq ,
+		  	  	"links" => table.map{|l| l[2] ? {"source" => l[2][0] , "target" => l[2][1] } : nil }.compact }
 
 	###Get rid of duplicate links, but add a count of connections to each unique record.
 	de_duped_links = new_dup_hash(list['links']).map{|l,c| { "source" => l['source'], "target" => l['target'], "value" => c}}
@@ -259,7 +259,7 @@ get '/post/id/:id/update/*?' do
 	protected!
 	neo = Neography::Rest.new
 		if (params[:id]) then
-			neo.set_node_properties(get_node(params[:id]), { "name" => params[:name], "href" => params[:href]})
+			neo.set_node_properties(get_node(params[:id]), { "name" => params[:name], "href" => params[:href], "img" => params[:img] })
 			get_node(params[:id]).to_json
 		end
 		return 
