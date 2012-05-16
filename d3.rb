@@ -173,11 +173,22 @@ def nodes_links(page)
   if result then result else nil end
   end
 
+
+
+
+
+
+
+
+
+
+
+
 #### Here's the setup for our RESTful backend using Sinatra.
 
 
 ## Load the front end editor. Need to work out a way to select/navigate through pages.
-get '/edit/page/*' do
+get '/edit/*' do
     protected!
     erb:edit
 end
@@ -199,6 +210,7 @@ get '/page/:page/links' do
 end
 
 get'/page/:page/cypher_debug' do
+	protected!
 	nodes_links(params[:page])['data'].to_json
 end
 
@@ -206,12 +218,14 @@ end
 ## Get the page node. 
 ## Not really sure when this would be useful so it may belong in the dev section.
 get '/page/:page' do
+	protected!
 	page = Neography::Node.load(get_page(params[:page]))
 	page.to_json
 end
 
 ## Get an post by neo_id from the stated page.
 get '/page/:page/post/:name' do
+	protected!
 	get_post_in_page( params[:name], params[:page] ).to_json
 	end
 
@@ -224,11 +238,13 @@ end
 
 ##Delete a post
 get '/post/id/:id/delete' do
+   protected!
    Neography::Node.load(params[:id] ).del
 end
 
 ##Set a post's fixed status
 get '/post/id/:id/fixed/?:fixed?/?:x?/?:y?' do
+   protected!
    neo = Neography::Rest.new
    if (params[:id]) then
      neo.set_node_properties( get_node(params[:id]), { "fixed" => params[:fixed], "x" => params[:x], "y" => params[:y] })
@@ -237,6 +253,18 @@ get '/post/id/:id/fixed/?:fixed?/?:x?/?:y?' do
    end
   neo.get_node_properties( get_node(params[:id])).to_json
 end
+
+## Update a post's text / url content
+get '/post/id/:id/update/*?' do
+	protected!
+	neo = Neography::Rest.new
+		if (params[:id]) then
+			neo.set_node_properties(get_node(params[:id]), { "name" => params[:name], "href" => params[:href]})
+			get_node(params[:id]).to_json
+		end
+		return 
+	end
+	
 
 ## Does what it says. Create a new node on a given page.
 get '/page/:page/post/new/name/:name/href/:href' do
@@ -263,3 +291,11 @@ end
 get '/page/:page/list_all' do
 	nodes_links(params[:page]).to_json
 end
+
+## If nothing else matches, serve page given or page 1
+get '/' do
+#page?/?:page?' do
+	#if !params[:page] then params[:page] = '#1' end
+	erb:view
+	end
+

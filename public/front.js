@@ -2,6 +2,8 @@
 var width = canvas_size()[0];
 var height = canvas_size()[1];
 
+var currentEdit = null;
+
 var svg = d3.select("#chart").append("svg")
 		.attr("width", width)
 		.attr("height", height);
@@ -66,16 +68,7 @@ function updateGraph(){
 
 // Front End / UI functions
 
-// Update node/link positions whenever force says "tick".
-force.on("tick", function(e) {
-	link.attr("x1", function(d) { return d.source.x + (d.source.weight*6); })
-        .attr("y1", function(d) { return d.source.y + (d.source.weight*4.5); })
-        .attr("x2", function(d) { return d.target.x + (d.target.weight*6); })
-        .attr("y2", function(d) { return d.target.y + (d.target.weight*4.5); });
 
-    node.attr("x", function(d) { return d.x; })
-        .attr("y", function(d) { return d.y; });
-  });
 
 
 //Deal with links/graphs based on bookmarkable URLs

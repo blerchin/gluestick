@@ -2,7 +2,7 @@
 
 function drawGrid(element) {
 ///Construct a grid behind edit interface
-	var grid = element.append("svg")
+/*	var grid = element.append("svg")
 		.attr("class", "grid")
 		.attr("width", width)
 		.attr("height", height);
@@ -22,7 +22,7 @@ function drawGrid(element) {
 		.attr("x2", x)
 		.attr("y1", 0)
 		.attr("y2", height);
-	}
+	}*/
 }
 
 

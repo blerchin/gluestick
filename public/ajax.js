@@ -16,14 +16,21 @@ function createLinksTable(localNodes, localLinks) {
 	var localHash = getHashTable(localNodes,"id");
 	console.log(localHash);
 	table = getLinksTable(getIndexedNodes(localNodes), localHash, localLinks);
-	console.log(table);
 	return table;
 	}
 
-
+function nodeSize(el) {
+		var weight = el.weight;
+		var width = (weight+2)*12;
+		var height = (weight+2)*9;
+	result = {"width":width, "height":height};
+	return result;
+	}
 
 
 ////Redraw and Restart the force simulator after modifying data
+
+
 function restart(nodes, links, init) {
 		   if (init) {force.nodes(nodes).links(links).start();}
 		   //Eventually we need to add diffs to existing arrays. For now, just reload the damn thing.
@@ -43,8 +50,8 @@ function restart(nodes, links, init) {
 			 .attr("x",5)
 			 .attr("y",5)
 			 .attr("name", function(d) {return d['name']})
-			 .attr("width", function(d) {return (d.weight+2)*12 })
-			 .attr("height",function(d) {return (d.weight+2)*9})
+			 .attr("width", function(d) {return nodeSize(d)['width']})
+			 .attr("height",function(d) {return nodeSize(d)['height']})
 			 .call(force.drag);
 
 		   nodeEnter.append("rect")
@@ -53,20 +60,61 @@ function restart(nodes, links, init) {
 			 .attr("width","100%")
 			 .attr("height","100%")
 			 .attr("fill","#eee");
-			 
-		var label = nodeEnter.append("text")
+			node.selectAll('text').remove();	 
+			
+/*This is a much better way to do things, but elements don't seem to move on tick.		
+		var label = node.append("foreignObject")
 			 .attr("class","text")
-			 .attr("x",10)
-			 .attr("y",10)
-			 .attr("width", "100%")
-			 .attr("height", "100%")
-			 .attr("text-anchor", "middle") 
-			 .text(function(d) { return d['name']; });
+			 //.attr("requiredExtensions","http://example.com/SVGExtensions/EmbeddedXHTML")
+			// .attr("x", function(d){return d.x +5 })
+			 //.attr("y", function(d){return d.y + 5})
+			 .attr("width", function(d){return nodeSize(d)['width']-10})
+			 .attr("height", function(d){return nodeSize(d)['height']-10})
+			   .append("xhtml:body")
+				    .style("font", "10px 'Helvetica Neue'")
+	   			    .html(function(d) { 
+				 		return '<p>'+d.name+'</p>';  });
+*/
+		node.selectAll('text').remove();
 
+		var label = node.append("text")
+					 .attr("class","text");
+					 //.attr("width","100%")
+					  //.attr("height","100%")
+					 
+			label.append("tspan")
+ 					 .attr("text-anchor","middle")
+ 					 .attr("x", function(d){return nodeSize(d)['width']/2})
+			 		 .attr("y", function(d){return nodeSize(d)['height']/2})
+					 .text(function(d) {return d.name.split("\\n")[0] });
+
+			label.append("tspan")
+					.attr("x", function(d){return nodeSize(d)['width']/2})
+			 		.attr("y", function(d){return nodeSize(d)['height']/2+15})
+					.attr("text-anchor","middle")
+					.text(function(d) {return d.name.split("\\n")[1] });
+							 
 		  nodeEnter.append("title")
 			  .text(function(d) { return d['name'] + ", id=" + d['id']; });
 			 
 		   node.exit().remove();
+		   
+		   
+		   // Update node/link positions whenever force says "tick".
+			force.on("tick", function(e) {
+				link.attr("x1", function(d) { return d.source.x + (d.source.weight*6); })
+					.attr("y1", function(d) { return d.source.y + (d.source.weight*4.5); })
+					.attr("x2", function(d) { return d.target.x + (d.target.weight*6); })
+					.attr("y2", function(d) { return d.target.y + (d.target.weight*4.5); });
+				node.attr("x", function(d) { return d.x; })
+					.attr("y", function(d) { return d.y; });
+				/*
+				label.attr("x", function(d,i) {return d.x; })
+					 .attr("y", function(d,i) { return d.y; });
+					 */
+  });
+		   
+		   
    }
    
    
