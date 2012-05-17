@@ -5,6 +5,7 @@
 function fetchJson(url,callback) {
 	var json = $.getJSON(url, function(json) {
 				var fetchedLinks = createLinksTable(json.posts, json.links);
+				stayPositive(json.posts);
 				return callback({ "nodes" : json.posts , "links" : fetchedLinks});
 				});
 	}
@@ -12,6 +13,8 @@ function fetchJson(url,callback) {
 
 ///Create an Array of links referencing nodes as objects.
 //This is hiding a bunch of messy, shitty loops that should one day be dealt with.
+
+
 function createLinksTable(localNodes, localLinks) {
 	var localHash = getHashTable(localNodes,"id");
 	console.log(localHash);
@@ -27,8 +30,12 @@ function nodeSize(el) {
 	result = {"width":width, "height":height};
 	return result;
 	}
-
-
+function stayPositive(nodes) {
+	for (n in nodes) {
+		if (n.x<0) { n.x = 40};
+		if (n.y<0) { n.y = 40};
+		}
+}
 ////Redraw and Restart the force simulator after modifying data
 
 
