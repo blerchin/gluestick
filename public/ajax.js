@@ -58,6 +58,7 @@ function restart(nodes, links, init) {
 			 .attr("x",5)
 			 .attr("y",5)
 			 .attr("name", function(d) {return d['name']})
+			 .attr("id", function(d) {return d['id']})
 			 .attr("width", function(d) {return nodeSize(d)['width']})
 			 .attr("height",function(d) {return nodeSize(d)['height']})
 			 .call(force.drag);
@@ -67,7 +68,7 @@ function restart(nodes, links, init) {
 			 .attr("ry",5)
 			 .attr("width","100%")
 			 .attr("height","100%")
-			 .attr("fill","#eee");
+			 .attr("opacity", 0);
 			node.selectAll('text').remove();	 
 			
 /*This is a much better way to do things, but elements don't seem to move on tick.		
