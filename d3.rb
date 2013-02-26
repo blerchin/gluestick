@@ -178,18 +178,11 @@ def nodes_links(page)
 
 
 
-
-
-
-
-
-
 #### Here's the setup for our RESTful backend using Sinatra.
 
 
-## Load the front end editor. Need to work out a way to select/navigate through pages.
+## Load the front end editor.
 get '/edit/*' do
-    protected!
     erb:edit
 end
 
@@ -243,7 +236,7 @@ get '/post/id/:id/delete' do
 end
 
 ##Set a post's fixed status
-get '/post/id/:id/fixed/*?' do
+get '/post/id/:id/fixed/' do
    protected!
    neo = Neography::Rest.new
    if (params[:id]) then

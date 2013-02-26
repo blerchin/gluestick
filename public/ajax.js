@@ -51,12 +51,11 @@ function restart(nodes, links, init) {
 
 		   link.exit().remove();
 		   
-		   node = svg.selectAll('svg.node').data(nodes);
+		   node = content.selectAll('.node').data(nodes);
 		   
-		   var nodeEnter = node.enter().append("svg")
+		   var nodeEnter = node.enter().append("div")
 			 .attr("class", "node")
-			 .attr("x",5)
-			 .attr("y",5)
+			 .attr("style", function(d) {return "left:" + d.x + "; top:" + d.y })
 			 .attr("name", function(d) {return d['name']})
 			 .attr("id", function(d) {return d['id']})
 			 .attr("width", function(d) {return nodeSize(d)['width']})
@@ -71,19 +70,17 @@ function restart(nodes, links, init) {
 			 .attr("opacity", 0);
 			node.selectAll('text').remove();	 
 			
-/*This is a much better way to do things, but elements don't seem to move on tick.		
-		var label = node.append("foreignObject")
+//This is a much better way to do things, but elements don't seem to move on tick.		
+		var label = node.append("p")
 			 .attr("class","text")
-			 //.attr("requiredExtensions","http://example.com/SVGExtensions/EmbeddedXHTML")
-			// .attr("x", function(d){return d.x +5 })
-			 //.attr("y", function(d){return d.y + 5})
+			 .attr("requiredExtensions","http://example.com/SVGExtensions/EmbeddedXHTML")
+			 .attr("x", function(d){return d.x +5 })
+			 .attr("y", function(d){return d.y + 5})
 			 .attr("width", function(d){return nodeSize(d)['width']-10})
 			 .attr("height", function(d){return nodeSize(d)['height']-10})
-			   .append("xhtml:body")
-				    .style("font", "10px 'Helvetica Neue'")
-	   			    .html(function(d) { 
-				 		return '<p>'+d.name+'</p>';  });
-*/
+			   .text(function(d) { 
+				 		return d.name;  });
+/*
 		var nodesWithImage = node.filter(function(d) { 
 										return d.img != ( null && "img src");}); 
 		nodesWithImage.append('image')
@@ -92,7 +89,6 @@ function restart(nodes, links, init) {
 			.attr("height", "100%");
 		
 		node.selectAll('text').remove();
-
 		var label = node.append("text")
 					 .attr("class","text");
 					 //.attr("width","100%")
@@ -109,7 +105,7 @@ function restart(nodes, links, init) {
 			 		.attr("y", function(d){return nodeSize(d)['height']/2+15})
 					.attr("text-anchor","middle")
 					.text(function(d) {return d.name.split("\\n")[1] });
-							 
+*/							 
 		  nodeEnter.append("title")
 			  .text(function(d) { return d['name'] + ", id=" + d['id']; });
 			 
@@ -122,8 +118,8 @@ function restart(nodes, links, init) {
 					.attr("y1", function(d) { return d.source.y + (d.source.weight*4.5); })
 					.attr("x2", function(d) { return d.target.x + (d.target.weight*6); })
 					.attr("y2", function(d) { return d.target.y + (d.target.weight*4.5); });
-				node.attr("x", function(d) { return d.x; })
-					.attr("y", function(d) { return d.y; });
+				node.attr("left", function(d) { return d.x; })
+					.attr("top", function(d) { return d.y; });
 				/*
 				label.attr("x", function(d,i) {return d.x; })
 					 .attr("y", function(d,i) { return d.y; });
