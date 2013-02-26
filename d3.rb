@@ -247,12 +247,6 @@ get '/post/id/:id/fixed/' do
   neo.get_node_properties( get_node(params[:id])).to_json
 end
 
-get '/post/id/:id/unfuck/' do
-	neo = Neography::Rest.new
-	neo.set_node_properties( get_node(params[:id]), {"fixed" => 3, "x" => 100, "y" =>100})
-	get_node(params[:id]).to_json
-end
-
 ## Update a post's text / url content
 get '/post/id/:id/update/*?' do
 	protected!
