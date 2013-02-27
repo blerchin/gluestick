@@ -68,7 +68,7 @@ function restart(nodes, links, init) {
 			 .attr("ry",5)
 			 .attr("width","100%")
 			 .attr("height","100%")
-			 .attr("opacity", 0);
+			 .attr("opacity", .7);
 			node.selectAll('text').remove();	 
 			
 /*This is a much better way to do things, but elements don't seem to move on tick.		
